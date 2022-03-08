@@ -8,6 +8,10 @@ struct ObjectConstants
 {
     DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+    UINT MaterialIndex;
+    UINT     ObjPad0;
+    UINT     ObjPad1;
+    UINT     ObjPad2;
 };
 
 struct PassConstants
@@ -39,6 +43,21 @@ struct PassConstants
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light Lights[MaxLights];
+};
+
+struct MaterialData
+{
+    DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+    DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+    float Roughness = 0.5f;
+
+    // Used in texture mapping.
+    DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+
+    UINT DiffuseMapIndex = 0;
+    UINT MaterialPad0;
+    UINT MaterialPad1;
+    UINT MaterialPad2;
 };
 
 struct Vertex
