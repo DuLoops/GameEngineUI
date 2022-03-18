@@ -1,18 +1,14 @@
 #include "PhysicsObject.h"
-#include <ppl.h>
-#include <algorithm>
-#include <vector>
-#include <cassert>
 
 using namespace DirectX;
 
-PhysicsObject::PhysicsObject(DirectX::XMFLOAT3 startingPosition, DirectX::XMFLOAT3 startingVelocity, DirectX::XMFLOAT3 startingForce, float startingMass, float dt)
+PhysicsObject::PhysicsObject(DirectX::XMFLOAT3 startingPosition, DirectX::XMFLOAT3 startingVelocity, DirectX::XMFLOAT3 startingForce, float startingMass, float stepTime)
 {
 	position = startingPosition;
 	velocity = startingVelocity;
 	force = startingForce;
 	mass = startingMass;
-	timeStep = dt;
+	timeStep = stepTime;
 }
 
 PhysicsObject::~PhysicsObject()

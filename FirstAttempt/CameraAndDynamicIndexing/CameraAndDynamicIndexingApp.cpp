@@ -397,40 +397,26 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 
 void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 {
-	auto& e1 = mAllRitems[0];
-	XMMATRIX world = XMLoadFloat4x4(&e1->World);
-	XMStoreFloat4x4(&e1->World, world * XMMatrixTranslation(0.0f, 0.0f, 1.0f * gt.DeltaTime()));
-	e1->NumFramesDirty++;
-}
+	auto& bound1 = allBB[0];
+	auto& bound2 = allBB[1];
 
-bool BoundingBoxCollision(XMVECTOR& firstObjBBMinVertex,
-	XMVECTOR& firstObjBBMaxVertex,
-	XMVECTOR& secondObjBBMinVertex,
-	XMVECTOR& secondObjBBmaxVertex)
-{
-	//if false obj1 is to the LEFT of obj2
-	if (XMVectorGetX(firstObjBBMaxVertex) > XMVectorGetX(secondObjBBMinVertex))
+	bool hit = !(bound1->Contains(*bound2) == DISJOINT);
+	if (!hit) {
+		float dt = gt.DeltaTime();
+		auto& e1 = mAllRitems[0];
+		XMMATRIX world = XMLoadFloat4x4(&e1->World);
+		XMStoreFloat4x4(&e1->World, world * XMMatrixTranslation(0.0f, 0.0f, 1.0f * dt));
 
-		//if false obj1 is to the RIGHT of obj2
-		if (XMVectorGetX(firstObjBBMinVertex) < XMVectorGetX(secondObjBBmaxVertex))
+		XMVECTOR bound1Center = XMLoadFloat3(&bound1->Center);
+		XMFLOAT3& translation = XMFLOAT3(0.0f, 0.0f, 1.0f * dt);
+		XMVECTOR translationVector = XMLoadFloat3(&translation);
+		XMStoreFloat3(&bound1->Center, bound1Center + translationVector);
 
-			//if false obj1 is UNDER obj2
-			if (XMVectorGetY(firstObjBBMaxVertex) > XMVectorGetY(secondObjBBMinVertex))
-
-				//if false obj1 is ABOVE obj2
-				if (XMVectorGetY(firstObjBBMinVertex) < XMVectorGetY(secondObjBBmaxVertex))
-
-					//if false obj1 is IN FRONT OF obj2
-					if (XMVectorGetZ(firstObjBBMaxVertex) > XMVectorGetZ(secondObjBBMinVertex))
-
-						//if false obj1 is BEHIND obj2
-						if (XMVectorGetZ(firstObjBBMinVertex) < XMVectorGetZ(secondObjBBmaxVertex))
-
-							//If we've made it this far, then the two bounding boxes are colliding
-							return true;
-
-	//If the two bounding boxes are not colliding, then return false
-	return false;
+		e1->NumFramesDirty++;
+	}
+	else {
+		// Handle hit
+	}
 }
  
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
@@ -896,9 +882,6 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	{
 		auto boxRitem = std::make_unique<RenderItem>();
 		XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 1.0f, -10.0f + i * 5.0f));
-		//Bounding Box
-		BoundingBox bounding = BoundingBox();
-		//BoundingBox::CreateFromPoints(bounding, 2.0f, 2.0f); not sure what function to use yet
 		XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex1++;
 		boxRitem->Mat = mMaterials["crate0"].get();
@@ -908,7 +891,13 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
 		mAllRitems.push_back(std::move(boxRitem));
-		//allBB.push_back(bounding); store bounding box 
+
+		//Bounding Box
+		auto bounding = std::make_unique<BoundingBox>();
+		XMFLOAT3 center = XMFLOAT3(0.0f + (2.0f / 2), 1.0f + (2.0f / 2), (-10.0f + i * 5.0f) + (2.0f / 2));
+		XMFLOAT3 extents = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		*bounding = BoundingBox(center, extents);
+		allBB.push_back(std::move(bounding)); //store bounding box 
 	}
 
     auto gridRitem = std::make_unique<RenderItem>();

@@ -1,13 +1,12 @@
 #ifndef PHYSICS_OBJECT_H
 #define PHYSICS_OBJECT_H
 
-#include <vector>
 #include <DirectXMath.h>
 
 class PhysicsObject
 {
 public:
-    PhysicsObject(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 velocity, DirectX::XMFLOAT3 force, float mass, float dt);
+    PhysicsObject(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 velocity, DirectX::XMFLOAT3 force, float mass, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
     PhysicsObject& operator=(const PhysicsObject rhs) = delete;
     ~PhysicsObject();

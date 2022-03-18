@@ -151,7 +151,7 @@
     <ClCompile Include="..\..\Common\MathHelper.cpp" />
     <ClCompile Include="CameraAndDynamicIndexingApp.cpp" />
     <ClCompile Include="FrameResource.cpp" />
-    <ClCompile Include="PhysicsEngine.cpp" />
+    <ClCompile Include="PhysicsWorld.cpp" />
     <ClCompile Include="PhysicsObject.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -165,7 +165,7 @@
     <ClInclude Include="..\..\Common\MathHelper.h" />
     <ClInclude Include="..\..\Common\UploadBuffer.h" />
     <ClInclude Include="FrameResource.h" />
-    <ClInclude Include="PhysicsEngine.h" />
+    <ClInclude Include="PhysicsWorld.h" />
     <ClInclude Include="PhysicsObject.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
