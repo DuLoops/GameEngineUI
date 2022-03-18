@@ -21,6 +21,7 @@ PhysicsObject::~PhysicsObject()
 
 void PhysicsObject::Update(float dt)
 {
+	/*
 	static float t = 0;
 
 	// Accumulate time.
@@ -33,5 +34,6 @@ void PhysicsObject::Update(float dt)
 		position = position * velocityTranslationMatrix;
 		t = 0.0f; // reset time
 	}
+	*/
 }
 

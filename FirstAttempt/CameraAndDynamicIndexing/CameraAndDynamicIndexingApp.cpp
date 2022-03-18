@@ -73,6 +73,7 @@ private:
     virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 
     void OnKeyboardInput(const GameTimer& gt);
+	void PhysicsUpdate(const GameTimer& gt);
 	void AnimateMaterials(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialBuffer(const GameTimer& gt);
@@ -205,6 +206,7 @@ void CameraAndDynamicIndexingApp::OnResize()
 void CameraAndDynamicIndexingApp::Update(const GameTimer& gt)
 {
     OnKeyboardInput(gt);
+	PhysicsUpdate(gt);
 
     // Cycle through the circular frame resource array.
     mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -390,6 +392,14 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mIsWireframe = false;
 
 	mCamera.UpdateViewMatrix();
+}
+
+void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
+{
+	auto& e1 = mAllRitems[0];
+	XMMATRIX world = XMLoadFloat4x4(&e1->World);
+	XMStoreFloat4x4(&e1->World, world * XMMatrixTranslation(1.0f * gt.DeltaTime(), 0.0f, 0.0f));
+	e1->NumFramesDirty++;
 }
  
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
