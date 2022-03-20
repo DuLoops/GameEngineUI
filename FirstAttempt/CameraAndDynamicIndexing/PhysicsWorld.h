@@ -3,6 +3,9 @@
 #include <vector>
 #include <DirectXMath.h>
 #include "PhysicsObject.h"
+#include "../../Common/UploadBuffer.h"
+
+using namespace DirectX;
 
 class PhysicsWorld {
 private:

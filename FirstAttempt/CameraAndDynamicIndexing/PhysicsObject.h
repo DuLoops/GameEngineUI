@@ -2,26 +2,31 @@
 #define PHYSICS_OBJECT_H
 
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
+
+using namespace DirectX;
 
 class PhysicsObject
 {
 public:
-    PhysicsObject(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 velocity, DirectX::XMFLOAT3 force, float mass, float stepTime);
+    PhysicsObject(XMFLOAT3 position, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
-    PhysicsObject& operator=(const PhysicsObject rhs) = delete;
+    PhysicsObject& operator=(const PhysicsObject& rhPhysicsObject);
     ~PhysicsObject();
 
-    const DirectX::XMFLOAT3& Position()const { return position; }
-    const DirectX::XMFLOAT3& Velocity()const { return velocity; }
-    const DirectX::XMFLOAT3& Force()const { return force; }
+    const XMFLOAT3& Position()const { return position; }
+    const XMFLOAT3& Velocity()const { return velocity; }
+    const XMFLOAT3& Force()const { return force; }
+    const BoundingBox& ObjBoundingBox()const { return boundingBox; }
     const float Mass()const { return mass; }
 
     void Update(float dt);
 
 private:
-    DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT3 velocity;
-    DirectX::XMFLOAT3 force;
+    XMFLOAT3 position;
+    XMFLOAT3 velocity;
+    XMFLOAT3 force;
+    BoundingBox boundingBox;
     float mass;
     float timeStep = 0.0f;
 };
