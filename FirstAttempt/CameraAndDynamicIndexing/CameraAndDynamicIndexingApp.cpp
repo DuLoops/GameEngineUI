@@ -114,7 +114,7 @@ private:
  
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	std::vector<std::unique_ptr<BoundingBox>> allBB;
+	std::vector<std::unique_ptr<BoundingBox>> allBoundingBoxes;
 
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mOpaqueRitems;
@@ -397,8 +397,8 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 
 void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 {
-	auto& bound1 = allBB[0];
-	auto& bound2 = allBB[1];
+	auto& bound1 = allBoundingBoxes[0];
+	auto& bound2 = allBoundingBoxes[1];
 
 	bool hit = !(bound1->Contains(*bound2) == DISJOINT);
 	if (!hit) {
@@ -407,10 +407,16 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 		XMMATRIX world = XMLoadFloat4x4(&e1->World);
 		XMStoreFloat4x4(&e1->World, world * XMMatrixTranslation(0.0f, 0.0f, 1.0f * dt));
 
+		float boundBoxScale = 1.0f;
 		XMVECTOR bound1Center = XMLoadFloat3(&bound1->Center);
-		XMFLOAT3& translation = XMFLOAT3(0.0f, 0.0f, 1.0f * dt);
+		XMFLOAT3 axis = XMFLOAT3(0.0f, 0.0f, 1.0f);
+		XMVECTOR axisVector = XMLoadFloat3(&axis);
+		float rotationAngle = 0.0f;
+		XMVECTOR rotationVector = XMQuaternionRotationAxis(axisVector, rotationAngle);
+		XMFLOAT3 translation = XMFLOAT3(0.0f, 0.0f, 1.0f * dt);
 		XMVECTOR translationVector = XMLoadFloat3(&translation);
-		XMStoreFloat3(&bound1->Center, bound1Center + translationVector);
+
+		bound1.get()->Transform(*bound1.get(), boundBoxScale, rotationVector, translationVector);
 
 		e1->NumFramesDirty++;
 	}
@@ -897,7 +903,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 		XMFLOAT3 center = XMFLOAT3(0.0f + (2.0f / 2), 1.0f + (2.0f / 2), (-10.0f + i * 5.0f) + (2.0f / 2));
 		XMFLOAT3 extents = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		*bounding = BoundingBox(center, extents);
-		allBB.push_back(std::move(bounding)); //store bounding box 
+		allBoundingBoxes.push_back(std::move(bounding)); //store bounding box 
 	}
 
     auto gridRitem = std::make_unique<RenderItem>();
