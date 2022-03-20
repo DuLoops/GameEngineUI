@@ -410,8 +410,9 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 	{
 		if (e->ObjCBIndex < allPhysicsObjects.size()) {
 			auto& currentPhysicsObject = allPhysicsObjects[e->ObjCBIndex];
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
-			XMStoreFloat4x4(&e->World, XMMatrixIdentity() * XMMatrixTranslation(currentPhysicsObject->Position().x, currentPhysicsObject->Position().y, currentPhysicsObject->Position().z));
+			e->World._41 = currentPhysicsObject->Position().x;
+			e->World._42 = currentPhysicsObject->Position().y;
+			e->World._43 = currentPhysicsObject->Position().z;
 
 			e->NumFramesDirty++;
 		}
@@ -892,37 +893,27 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(boxRitem));
 
 
-		// Physics Object Setup
+		// Create Physics Objects
+		float mass = 1.0f;
+		float stepTime = 0.0f;
 		XMFLOAT3 position = XMFLOAT3(0.0f, 1.0f, -10.0f + i * 5.0f);
-
-		XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 1.0f);
 		XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
 		XMFLOAT3 center = XMFLOAT3(0.0f + (2.0f / 2), 1.0f + (2.0f / 2), (-10.0f + i * 5.0f) + (2.0f / 2));
 		XMFLOAT3 extents = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		BoundingBox boundingBox = BoundingBox(center, extents);
-
-		float mass = 1.0f;
-		float stepTime = 0.0f;
-
-		auto physicsObject = std::make_unique<PhysicsObject>(position, velocity, force, boundingBox, mass, stepTime);
-
-		allPhysicsObjects.push_back(std::move(physicsObject)); //store bounding box 
-		/*
-		// Set the physcis of each oject differentsly
+		// Set the physics of each oject differently
+		XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		if (i == 0) {
-
+			velocity = XMFLOAT3(0.0f, 0.0f, 0.5f);
 		}
 		else if (i == 1) {
-
+			velocity = XMFLOAT3(2.0f, 0.0f, -1.0f);
 		}
 		else if (i == 2) {
-
+			velocity = XMFLOAT3(0.0f, 0.0f, -0.5f);
 		}
-		else {
-
-		}
-		*/
+		auto physicsObject = std::make_unique<PhysicsObject>(position, velocity, force, boundingBox, mass, stepTime);
+		allPhysicsObjects.push_back(std::move(physicsObject));
 	}
 
     auto gridRitem = std::make_unique<RenderItem>();
