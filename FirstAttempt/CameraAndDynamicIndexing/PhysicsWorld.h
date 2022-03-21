@@ -10,6 +10,7 @@ using namespace DirectX;
 class PhysicsWorld {
 private:
 	std::vector<PhysicsObject*> objects;
+	// Need to implmenet BSP Tree (Binary space partitioning tree)
 public:
 	PhysicsWorld();
 	void AddObject(PhysicsObject* object);
