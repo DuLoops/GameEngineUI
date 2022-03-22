@@ -8,6 +8,9 @@ void PhysicsWorld::AddObject(PhysicsObject* object) {
 }
 
 void PhysicsWorld::Update(float dt) {
+	// Detect Collisions Using BSP Tree (Binary space partitioning tree)
+	// **************************************************************************
+	// **************************************************************************
 	for (int objectIndex = 0; objectIndex < objects.size(); objectIndex++)
 	{
 		PhysicsObject* currentObject = objects[objectIndex];
