@@ -11,6 +11,7 @@
 
 // All physics calculations taking place here
 #include "PhysicsWorld.h"
+#include "GameObject.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -77,6 +78,7 @@ private:
 
     void OnKeyboardInput(const GameTimer& gt);
 	void PhysicsUpdate(const GameTimer& gt);
+	void UpdateGameLoop();
 	void AnimateMaterials(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialBuffer(const GameTimer& gt);
@@ -132,6 +134,7 @@ private:
 	// Setup Physics
 	PhysicsWorld physicsWorld;
 	std::vector<std::unique_ptr<PhysicsObject>> allPhysicsObjects;
+	std::vector<std::unique_ptr<GameObject>> allGameObjects;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -214,6 +217,7 @@ void CameraAndDynamicIndexingApp::Update(const GameTimer& gt)
 {
     OnKeyboardInput(gt);
 	PhysicsUpdate(gt);
+	UpdateGameLoop();
 
     // Cycle through the circular frame resource array.
     mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -417,6 +421,11 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 			e->NumFramesDirty++;
 		}
 	}
+}
+
+void CameraAndDynamicIndexingApp::UpdateGameLoop()
+{
+	
 }
  
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
