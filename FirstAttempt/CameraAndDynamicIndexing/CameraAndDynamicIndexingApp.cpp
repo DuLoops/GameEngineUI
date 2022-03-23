@@ -135,6 +135,7 @@ private:
 	PhysicsWorld physicsWorld;
 	std::vector<std::unique_ptr<PhysicsObject>> allPhysicsObjects;
 	std::vector<std::unique_ptr<GameObject>> allGameObjects;
+	std::vector<GameObject*> gameObjects;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -913,7 +914,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 		// Set the physics of each oject differently
 		XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		if (i == 0) {
-			velocity = XMFLOAT3(0.0f, 0.0f, 0.5f);
+			velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		}
 		else if (i == 1) {
 			velocity = XMFLOAT3(2.0f, 0.0f, -1.0f);
@@ -923,6 +924,15 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 		}
 		auto physicsObject = std::make_unique<PhysicsObject>(position, velocity, force, boundingBox, mass, stepTime);
 		allPhysicsObjects.push_back(std::move(physicsObject));
+
+		// Create Game Objects
+		int boxHealth = 100;
+		bool isPlayerObject = false;
+		if (i == 0) {
+			isPlayerObject = true;
+		}
+		auto gameObject = std::make_unique<GameObject>(physicsObject.get(), 100, isPlayerObject);
+		allGameObjects.push_back(std::move(gameObject));
 	}
 
     auto gridRitem = std::make_unique<RenderItem>();
@@ -1005,6 +1015,9 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	// All physics objects shoudl be poart of pysics world
 	for (auto& physicsObject : allPhysicsObjects)
 		physicsWorld.AddObject(physicsObject.get());
+
+	for (auto& gameObject : allGameObjects)
+		gameObjects.push_back(gameObject.get());
 }
 
 void CameraAndDynamicIndexingApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

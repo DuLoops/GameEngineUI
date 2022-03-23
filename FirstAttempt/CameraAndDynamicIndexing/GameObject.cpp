@@ -1,9 +1,10 @@
 #include "GameObject.h"
 
-GameObject::GameObject(PhysicsObject* physicsData, int startHealth)
+GameObject::GameObject(PhysicsObject* physicsData, int startHealth, bool isPlayerObject)
 {
-	objectPhysicsData = physicsData;
-	health = startHealth;
+	this->objectPhysicsData = physicsData;
+	this->health = startHealth;
+	this->isPlayerObject = isPlayerObject;
 }
 
 GameObject::~GameObject()
