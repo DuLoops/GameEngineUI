@@ -98,6 +98,9 @@ StyleCopReport.xml
 *.svclog
 *.scc
 
+#Allow OBJs in Models folder
+!FirstAttempt/CameraAndDynamicIndexing/Models/*.obj
+
 # Chutzpah Test files
 _Chutzpah*
 
