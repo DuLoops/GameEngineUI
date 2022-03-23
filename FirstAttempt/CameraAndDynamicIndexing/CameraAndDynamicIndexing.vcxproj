@@ -151,6 +151,8 @@
     <ClCompile Include="..\..\Common\MathHelper.cpp" />
     <ClCompile Include="CameraAndDynamicIndexingApp.cpp" />
     <ClCompile Include="FrameResource.cpp" />
+    <ClCompile Include="PhysicsObject.cpp" />
+    <ClCompile Include="PhysicsWorld.cpp" />
     <ClCompile Include="Waves.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,7 +166,13 @@
     <ClInclude Include="..\..\Common\MathHelper.h" />
     <ClInclude Include="..\..\Common\UploadBuffer.h" />
     <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="PhysicsObject.h" />
+    <ClInclude Include="PhysicsWorld.h" />
     <ClInclude Include="Waves.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Sounds\explo1.wav" />
+    <Media Include="Sounds\NightAmbienceSimple_02.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

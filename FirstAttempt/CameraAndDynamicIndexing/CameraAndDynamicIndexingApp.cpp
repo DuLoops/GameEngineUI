@@ -9,6 +9,13 @@
 #include "FrameResource.h"
 #include "Waves.h"
 #include "../../Common/Camera.h"
+#include <random>
+// Iostream - STD I/O Library
+#include <iostream>
+#include <fstream>
+
+// All physics calculations taking place here
+#include "PhysicsWorld.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -95,6 +102,8 @@ private:
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
+	void PhysicsUpdate(const GameTimer& gt);
+	void BuildObjGeometry(char* filePath, std::string geoName, std::string drawArgName);
 	void BuildWavesGeometry();
 	void BuildBoxGeometry();
 	void BuildTreeSpritesGeometry();
@@ -140,6 +149,8 @@ private:
 
 	std::unique_ptr<Waves> mWaves;
 
+	
+
 	PassConstants mMainPassCB;
 
 	/*XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
@@ -157,6 +168,11 @@ private:
 
 	bool mIsWireframe = false;
 
+	std::unique_ptr<std::mt19937> m_random;
+	float explodeDelay;
+	// Setup Physics
+	PhysicsWorld physicsWorld;
+	std::vector<std::unique_ptr<PhysicsObject>> allPhysicsObjects;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -206,11 +222,17 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+	
+	/*m_explode = std::make_unique<SoundEffect>(m_audEngine.get(),
+		L"explo1.wav");
+	m_ambient = std::make_unique<SoundEffect>(m_audEngine.get(),
+		L"NightAmbienceSimple_02.wav");*/
 
 	LoadTextures();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
+	BuildObjGeometry("Models/tank2.obj", "objGeo", "obj"); // load OBJ test
 	BuildLandGeometry();
 	BuildWavesGeometry();
 	BuildBoxGeometry();
@@ -219,6 +241,7 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
+
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -230,6 +253,10 @@ bool CameraAndDynamicIndexingApp::Initialize()
 
 	mCamera.SetPosition(0.0f, 10.0f, -80.0f);
 
+	std::random_device rd;
+	m_random = std::make_unique<std::mt19937>(rd());
+
+	explodeDelay = 2.f;
 	return true;
 }
 
@@ -247,6 +274,7 @@ void CameraAndDynamicIndexingApp::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
 	//UpdateCamera(gt);
+	PhysicsUpdate(gt);
 
 	// Cycle through the circular frame resource array.
 	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -267,10 +295,21 @@ void CameraAndDynamicIndexingApp::Update(const GameTimer& gt)
 	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 	UpdateWaves(gt);
+
+	/*explodeDelay -= elapsedTime;
+	if (explodeDelay < 0.f)
+	{
+		m_explode->Play();
+
+		std::uniform_real_distribution<float> dist(1.f, 10.f);
+		explodeDelay = dist(*m_random);
+	}*/
 }
 
 void CameraAndDynamicIndexingApp::Draw(const GameTimer& gt)
 {
+	//explodeDelay = 2.f;
+
 	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
 	// Reuse the memory associated with command recording.
@@ -358,13 +397,13 @@ void CameraAndDynamicIndexingApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
 	ReleaseCapture();
 }
-void CameraAndDynamicIndexingApp::OnMouseScroll(short zDelta)
+void CameraAndDynamicIndexingApp::OnMouseScroll (short zDelta)
 {
 	if (zDelta < 0) {
 		//mCamera.Walk(-(0.1f * (zDelta / 120.0f) * (zDelta / 120.0f)));
 		mCamera.Walk(-5.0f);
 	}
-	else {
+	else{
 		if (zDelta - 0.1f * (zDelta / 120.0f) * (zDelta / 120.0f) >= 0.0f) {
 			//mCamera.Walk(0.1f * (zDelta / 120.0f) * (zDelta / 120.0f));
 			mCamera.Walk(5.0f);
@@ -457,6 +496,19 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('K') & 0x8000)
 		mCamera.Roll(1.0f * dt);
 
+	if (GetAsyncKeyState('2') & 0x8000) {
+		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	}
+	if (GetAsyncKeyState('1') & 0x8000){
+		//const XMFLOAT3 pos = mCamera.GetPosition3f();
+
+		//mCamera.SetPosition(pos.x, pos.y + 5, pos.z - 1);
+
+		mCamera.SetLens(0.35f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+
+		//set character in front of the camera 
+	}
+
 	/*if (GetAsyncKeyState('1') & 0x8000)
 		mMainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.8f };
 		mMainPassCB.Lights[1].Strength = { 0.0f, 0.0f, 0.0f };
@@ -472,7 +524,7 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 	}*/
 
-	if (GetAsyncKeyState('1') & 0x8000)
+	if (GetAsyncKeyState('3') & 0x8000)
 		mIsWireframe = true;
 	else
 		mIsWireframe = false;
@@ -495,7 +547,23 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 //	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 //	XMStoreFloat4x4(&mView, view);
 //}
+void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
+{
+	float dt = gt.DeltaTime();
+	physicsWorld.Update(dt);
 
+	for (auto& e : mAllRitems)
+	{
+		if (e->ObjCBIndex < allPhysicsObjects.size()) {
+			auto& currentPhysicsObject = allPhysicsObjects[e->ObjCBIndex];
+			e->World._41 = currentPhysicsObject->Position().x;
+			e->World._42 = currentPhysicsObject->Position().y;
+			e->World._43 = currentPhysicsObject->Position().z;
+
+			e->NumFramesDirty++;
+		}
+	}
+}
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
 {
 	// Scroll the water material texture coordinates.
@@ -535,6 +603,7 @@ void CameraAndDynamicIndexingApp::UpdateObjectCBs(const GameTimer& gt)
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+			//objConstants.MaterialIndex = e->Mat->MatCBIndex;
 
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -611,11 +680,11 @@ void CameraAndDynamicIndexingApp::UpdateMainPassCB(const GameTimer& gt)
 
 	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
 	mMainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.8f };
-
+	
 	//mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
 	mMainPassCB.Lights[1].Direction = { 0.57735f, 0.57735f, 0.57735f };
 	mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-
+	
 	//mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	mMainPassCB.Lights[2].Direction = { 0.0f, 0.707f, 0.707f };
 	mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
@@ -628,7 +697,7 @@ void CameraAndDynamicIndexingApp::UpdateWaves(const GameTimer& gt)
 {
 	// Every quarter second, generate a random wave.
 	static float t_base = 0.0f;
-	if ((mTimer.TotalTime() - t_base) >= 0.25f)
+	if ((mTimer.TotalTime() - t_base) >= 0.5f)
 	{
 		t_base += 0.25f;
 
@@ -663,7 +732,6 @@ void CameraAndDynamicIndexingApp::UpdateWaves(const GameTimer& gt)
 	// Set the dynamic VB of the wave renderitem to the current frame VB.
 	mWavesRitem->Geo->VertexBufferGPU = currWavesVB->Resource();
 }
-
 void CameraAndDynamicIndexingApp::LoadTextures()
 {
 	auto grassTex = std::make_unique<Texture>();
@@ -698,7 +766,7 @@ void CameraAndDynamicIndexingApp::LoadTextures()
 	mTextures[waterTex->Name] = std::move(waterTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
-}
+}	
 
 void CameraAndDynamicIndexingApp::BuildRootSignature()
 {
@@ -831,10 +899,143 @@ void CameraAndDynamicIndexingApp::BuildShadersAndInputLayout()
 	};
 }
 
+/**
+* Creates geometry for the passed in .obj model, using the passed in geoName and drawArgName.
+*
+* NOTE: .obj file must be triangular (i.e. NO QUADS!)
+*/
+void CameraAndDynamicIndexingApp::BuildObjGeometry(char* filePath, std::string geoName, std::string drawArgName)
+{
+	UINT numberOfFaces = 0;
+	std::vector<UINT> vertexIndices, uvIndices, normalIndices;
+	std::vector<XMFLOAT3> temp_vertices;
+	std::vector<XMFLOAT3> temp_normals;
+	std::vector< XMFLOAT2 > temp_uvs;
+	std::vector<Vertex> vertices;
+	std::vector<UINT> indices;
+
+	// Open file
+	FILE* file = fopen(filePath, "r");
+	if (file == NULL) {
+		MessageBox(0, L"NULL FILE", 0, 0);
+	}
+
+	// Parse file
+	char lineHeader[128];
+	while (fscanf(file, "%s \n", lineHeader) != EOF) {
+		// Vertex positions
+		if (strcmp(lineHeader, "v") == 0) {
+			XMFLOAT3 vertex;
+			int a = fscanf(file, "%f %f %f \n", &vertex.x, &vertex.y, &vertex.z);
+			temp_vertices.push_back(vertex);
+		}
+		// Texture coordinates
+		else if (strcmp(lineHeader, "vt") == 0) {
+			XMFLOAT2 uv;
+			fscanf(file, "%f %f\n", &uv.x, &uv.y);
+			temp_uvs.push_back(uv);
+		}
+		// Vertex normals
+		else if (strcmp(lineHeader, "vn") == 0) {
+			XMFLOAT3 normals;
+			fscanf(file, "%f %f %f \n", &normals.x, &normals.y, &normals.z);
+			temp_normals.push_back(normals);
+		}
+		// Faces (file must use triangular faces)
+		else if (strcmp(lineHeader, "f") == 0) {
+			UINT vertexIndex[3], uvIndex[3], normalIndex[3];
+
+			// Note that this assumes the faces contain all components: position, texture coordinate and normal
+			// texture coordinate and normal are optional in .obj but required here to be read
+
+			// This also requires the .obj to use triangular faces i.e.
+			// f 1/2/3 1/2/3 1/2/3
+			int matches = fscanf(file, "%i/%i/%i %i/%i/%i %i/%i/%i \n",
+				&vertexIndex[0], &uvIndex[0], &normalIndex[0],
+				&vertexIndex[1], &uvIndex[1], &normalIndex[1],
+				&vertexIndex[2], &uvIndex[2], &normalIndex[2]);
+
+			if (matches != 9) {
+				MessageBox(0, L"Error reading file", 0, 0);
+				break;
+			}
+
+			// Load face data
+			vertexIndices.push_back(vertexIndex[0]);
+			vertexIndices.push_back(vertexIndex[1]);
+			vertexIndices.push_back(vertexIndex[2]);
+			uvIndices.push_back(uvIndex[0]);
+			uvIndices.push_back(uvIndex[1]);
+			uvIndices.push_back(uvIndex[2]);
+			normalIndices.push_back(normalIndex[0]);
+			normalIndices.push_back(normalIndex[1]);
+			normalIndices.push_back(normalIndex[2]);
+			numberOfFaces++;
+		}
+	}
+
+	// Create vertex and index list
+	numberOfFaces *= 3;
+	int cont = 0;
+	int index = -1;
+	for (int i = 0; i < numberOfFaces; i++) {
+
+		UINT vertexIndex = vertexIndices[i];
+		UINT normalIndex = normalIndices[i];
+		UINT uvIndex = uvIndices[i];
+		Vertex temp;
+		temp.Pos = temp_vertices[vertexIndex - 1];
+		temp.Normal = temp_normals[normalIndex - 1];
+		//temp.Tex = temp_uvs[uvIndex - 1]; // For texture; not currently implemented
+
+		indices.push_back(++index);
+		vertices.push_back(temp);
+
+		cont++;
+	}
+
+	//
+	// Pack the indices of all the meshes into one index buffer.
+	//
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(UINT);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = geoName;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)vertexIndices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[drawArgName] = submesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+}
+
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
 {
 	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(130.0f, 130.0f, 30, 20);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(460.0f, 460.0f, 30, 20);
 
 	//
 	// Extract the vertex elements we are interested and apply the height function to
@@ -952,11 +1153,21 @@ void CameraAndDynamicIndexingApp::BuildBoxGeometry()
 	std::vector<Vertex> vertices(box.Vertices.size());
 	for (size_t i = 0; i < box.Vertices.size(); ++i)
 	{
+		/*float x = MathHelper::RandF(-5.0f, 5.0f);
+		float z = MathHelper::RandF(-5.0f, 5.0f);
+		float y = GetHillsHeight(x, z);*/
+
 		auto& p = box.Vertices[i].Position;
 		vertices[i].Pos = p;
+
+		//vertices[i].Pos = XMFLOAT3(x, y, z);
+		
 		vertices[i].Normal = box.Vertices[i].Normal;
 		vertices[i].TexC = box.Vertices[i].TexC;
 	}
+
+	//const UINT vbByteSize = (UINT)vertices.size() * sizeof(BoxSpriteVertex);
+	//const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
@@ -1001,12 +1212,12 @@ void CameraAndDynamicIndexingApp::BuildTreeSpritesGeometry()
 		XMFLOAT2 Size;
 	};
 
-	static const int treeCount = 16;
-	std::array<TreeSpriteVertex, 16> vertices;
+	static const int treeCount = 20;
+	std::array<TreeSpriteVertex, treeCount> vertices;
 	for (UINT i = 0; i < treeCount; ++i)
 	{
-		float x = MathHelper::RandF(-45.0f, 45.0f);
-		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float x = MathHelper::RandF(-130.0f, 130.0f);
+		float z = MathHelper::RandF(-130.0f, 130.0f);
 		float y = GetHillsHeight(x, z);
 
 		// Move tree slightly above land height.
@@ -1016,10 +1227,10 @@ void CameraAndDynamicIndexingApp::BuildTreeSpritesGeometry()
 		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
 	}
 
-	std::array<std::uint16_t, 16> indices =
+	std::array<std::uint16_t, treeCount> indices =
 	{
-		0, 1, 2, 3, 4, 5, 6, 7,
-		8, 9, 10, 11, 12, 13, 14, 15
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+		10, 11, 12, 13, 14, 15, 16, 17, 18, 19
 	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(TreeSpriteVertex);
@@ -1201,18 +1412,113 @@ void CameraAndDynamicIndexingApp::BuildMaterials()
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
 
+	auto bricks0 = std::make_unique<Material>();
+	bricks0->Name = "bricks0";
+	bricks0->MatCBIndex = 4;
+	bricks0->DiffuseSrvHeapIndex = 3;
+	bricks0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	bricks0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	bricks0->Roughness = 0.1f;
+
+	
 	mMaterials["grass"] = std::move(grass);
 	mMaterials["water"] = std::move(water);
 	mMaterials["wirefence"] = std::move(wirefence);
 	mMaterials["treeSprites"] = std::move(treeSprites);
+	mMaterials["bricks0"] = std::move(bricks0);
 }
-
 void CameraAndDynamicIndexingApp::BuildRenderItems()
 {
+
+	UINT objCBIndex1 = 0;
+	for (int i = 0; i < 3; ++i)
+	{
+		float x = MathHelper::RandF(-130.0f, 130.0f);
+		float z = MathHelper::RandF(-130.0f, 130.0f);
+		float y = GetHillsHeight(x, z);
+
+
+		float x1 = MathHelper::RandF(0.5f, 1.0f);
+		float y1 = MathHelper::RandF(-0.5f, 1.0f);
+		float z1 = MathHelper::RandF(-0.5f, 1.0f);
+
+		y1 += 13.0f;
+		auto boxRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(1.0f, 1.0f, 1.0f));
+		XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		boxRitem->ObjCBIndex = objCBIndex1++;
+		boxRitem->Mat = mMaterials["wirefence"].get();
+		boxRitem->Geo = mGeometries["boxGeo"].get();
+		boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
+		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem.get());
+		mAllRitems.push_back(std::move(boxRitem));
+
+		// Create Physics Objects
+		float mass = 1.0f;
+		float stepTime = 0.0f;
+		XMFLOAT3 position = XMFLOAT3(0.0f, 5.0f, -10.0f + i * 5.0f);
+		XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		XMFLOAT3 center = XMFLOAT3(0.0f + (2.0f / 2), 1.0f + (2.0f / 2), (-10.0f + i * 5.0f) + (2.0f / 2));
+		XMFLOAT3 extents = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		BoundingBox boundingBox = BoundingBox(center, extents);
+		// Set the physics of each oject differently
+		XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		if (i == 0) {
+			velocity = XMFLOAT3(0.0f, 0.0f, 0.5f);
+		}
+		else if (i == 1) {
+			velocity = XMFLOAT3(2.0f, 0.0f, -1.0f);
+		}
+		else if (i == 2) {
+			velocity = XMFLOAT3(0.0f, 0.0f, -0.5f);
+		}
+		auto physicsObject = std::make_unique<PhysicsObject>(position, velocity, force, boundingBox, mass, stepTime);
+		allPhysicsObjects.push_back(std::move(physicsObject));
+	}
+
+	/*UINT objCBIndex2 = 3;
+	for (int i = objCBIndex2; i < 6; ++i)
+	{*/
+	float x1 = MathHelper::RandF(-130.0f, 130.0f);
+	float z1 = MathHelper::RandF(-130.0f, 130.0f);
+	float y2 = GetHillsHeight(x1, z1);
+	auto objBoxRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objBoxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(35.0f, 1.0f, 1.0f));
+	//XMStoreFloat4x4(&objBoxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	objBoxRitem->TexTransform = MathHelper::Identity4x4();
+	objBoxRitem->ObjCBIndex = 3;
+	objBoxRitem->Mat = mMaterials["wirefence"].get();
+	objBoxRitem->Geo = mGeometries["objGeo"].get();
+	objBoxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objBoxRitem->IndexCount = objBoxRitem->Geo->DrawArgs["obj"].IndexCount;
+	objBoxRitem->StartIndexLocation = objBoxRitem->Geo->DrawArgs["obj"].StartIndexLocation;
+	objBoxRitem->BaseVertexLocation = objBoxRitem->Geo->DrawArgs["obj"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBoxRitem.get());
+	mAllRitems.push_back(std::move(objBoxRitem));
+//}
+		
+	auto objBoxRitem1 = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objBoxRitem1->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(-35.0f, 1.0f, 1.0f));
+	//XMStoreFloat4x4(&objBoxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	objBoxRitem1->TexTransform = MathHelper::Identity4x4();
+	objBoxRitem1->ObjCBIndex = 4;
+	objBoxRitem1->Mat = mMaterials["wirefence"].get();
+	objBoxRitem1->Geo = mGeometries["objGeo"].get();
+	objBoxRitem1->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objBoxRitem1->IndexCount = objBoxRitem1->Geo->DrawArgs["obj"].IndexCount;
+	objBoxRitem1->StartIndexLocation = objBoxRitem1->Geo->DrawArgs["obj"].StartIndexLocation;
+	objBoxRitem1->BaseVertexLocation = objBoxRitem1->Geo->DrawArgs["obj"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBoxRitem1.get());
+	mAllRitems.push_back(std::move(objBoxRitem1));
+
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&wavesRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	wavesRitem->ObjCBIndex = 0;
+	XMStoreFloat4x4(&wavesRitem->TexTransform, XMMatrixScaling(15.0f, 15.0f, 1.0f));
+	wavesRitem->ObjCBIndex = 5;
 	wavesRitem->Mat = mMaterials["water"].get();
 	wavesRitem->Geo = mGeometries["waterGeo"].get();
 	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1227,7 +1533,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	gridRitem->ObjCBIndex = 1;
+	gridRitem->ObjCBIndex = 6;
 	gridRitem->Mat = mMaterials["grass"].get();
 	gridRitem->Geo = mGeometries["landGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1236,27 +1542,10 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
 	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
-	UINT objCBIndex1 = 2;
-	for (int i = 0; i < 5; ++i)
-	{
-		auto boxRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(5.0f, 5.0f, -40.0f + i * 15.0f));
-		XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-		boxRitem->ObjCBIndex = objCBIndex1++;
-		boxRitem->Mat = mMaterials["wirefence"].get();
-		boxRitem->Geo = mGeometries["boxGeo"].get();
-		boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-
-		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem.get());
-		mAllRitems.push_back(std::move(boxRitem));
-	}
 
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
 	treeSpritesRitem->World = MathHelper::Identity4x4();
-	treeSpritesRitem->ObjCBIndex = 3;
+	treeSpritesRitem->ObjCBIndex = 7;
 	treeSpritesRitem->Mat = mMaterials["treeSprites"].get();
 	treeSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
 	treeSpritesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
@@ -1266,10 +1555,29 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 
 	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
 
+	auto objMod = std::make_unique<RenderItem>();
+	objMod->World = MathHelper::Identity4x4();
+	XMStoreFloat4x4(&objMod->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	objMod->ObjCBIndex = 8;
+	objMod->Mat = mMaterials["water"].get();
+	objMod->Geo = mGeometries["waterGeo"].get();
+	objMod->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objMod->IndexCount = objMod->Geo->DrawArgs["grid"].IndexCount;
+	objMod->StartIndexLocation = objMod->Geo->DrawArgs["grid"].StartIndexLocation;
+	objMod->BaseVertexLocation = objMod->Geo->DrawArgs["grid"].BaseVertexLocation;
+
+	mRitemLayer[(int)RenderLayer::Transparent].push_back(objMod.get());
+
+	//mAllRitems.push_back(std::move(objBoxRitem));
+	mAllRitems.push_back(std::move(objMod));
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(gridRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
 	/*mAllRitems.push_back(std::move(boxRitem));*/
+
+	// All physics objects shoudl be poart of pysics world
+	for (auto& physicsObject : allPhysicsObjects)
+		physicsWorld.AddObject(physicsObject.get());
 }
 
 void CameraAndDynamicIndexingApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -1363,9 +1671,10 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> CameraAndDynamicIndexingApp::Ge
 float CameraAndDynamicIndexingApp::GetHillsHeight(float x, float z)const
 {
 	//return 0.2f * (z * sinf(0.2f * x) + x * cosf(0.01f * z));
-	//return 0.01f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
-	return 5.0f * sin(x / 20 - pi / 2) + 5.0f;
-	//return 0.5f;
+	//return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
+	//return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
+	//return 5.0f * sin(x/20 - pi/2) + 5.0f;
+	return 0.5f;
 }
 
 XMFLOAT3 CameraAndDynamicIndexingApp::GetHillsNormal(float x, float z)const
