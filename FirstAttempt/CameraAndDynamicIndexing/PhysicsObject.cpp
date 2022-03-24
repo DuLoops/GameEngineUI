@@ -37,7 +37,7 @@ void PhysicsObject::Update(float dt)
 		XMFLOAT3 translation = XMFLOAT3(velocity.x * t, velocity.y * t, velocity.z * t);
 		XMVECTOR translationVector = XMLoadFloat3(&translation);
 		XMVECTOR newPos = pos + translationVector;
-		
+
 		XMStoreFloat3(&position, newPos);
 		boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
 
