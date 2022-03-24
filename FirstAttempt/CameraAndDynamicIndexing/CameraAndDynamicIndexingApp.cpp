@@ -108,7 +108,6 @@ private:
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
-	void PhysicsUpdate(const GameTimer& gt);
 	void BuildObjGeometry(char* filePath, std::string geoName, std::string drawArgName);
 	void BuildWavesGeometry();
 	void BuildBoxGeometry();
