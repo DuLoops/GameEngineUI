@@ -1,3 +1,5 @@
+COMP 4995 - Gaming Term Project
+
 === CAMERA MOVEMENT CONTROLS ===.
 UP/DOWN/RIGHT/LEFT arrows - Rotate camera.
 WASD - Move camera. 
