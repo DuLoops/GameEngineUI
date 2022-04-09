@@ -241,7 +241,9 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildObjGeometry("Models/tank2.obj", "objGeo", "obj"); // load OBJ test
+	BuildObjGeometry("Models/tank2.obj", "objGeoTank", "objTank"); // load OBJ test
+	BuildObjGeometry("Models/house2.obj", "objGeoHouse", "objHouse"); // load OBJ test
+	BuildObjGeometry("Models/bullet2.obj", "objGeoBullet", "objBullet"); // load OBJ test
 	BuildLandGeometry();
 	BuildWavesGeometry();
 	BuildBoxGeometry();
@@ -1234,15 +1236,15 @@ void CameraAndDynamicIndexingApp::BuildTreeSpritesGeometry()
 	std::array<TreeSpriteVertex, treeCount> vertices;
 	for (UINT i = 0; i < treeCount; ++i)
 	{
-		float x = MathHelper::RandF(-130.0f, 130.0f);
-		float z = MathHelper::RandF(-130.0f, 130.0f);
+		float x = MathHelper::RandF(-230.0f, 230.0f);
+		float z = MathHelper::RandF(-230.0f, 230.0f);
 		float y = GetHillsHeight(x, z);
 
 		// Move tree slightly above land height.
-		y += 8.0f;
+		y += 19.0f;
 
 		vertices[i].Pos = XMFLOAT3(x, y, z);
-		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
+		vertices[i].Size = XMFLOAT2(40.0f, 40.0f);
 	}
 
 	std::array<std::uint16_t, treeCount> indices =
@@ -1419,8 +1421,8 @@ void CameraAndDynamicIndexingApp::BuildMaterials()
 	wirefence->MatCBIndex = 2;
 	wirefence->DiffuseSrvHeapIndex = 2;
 	wirefence->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	wirefence->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	wirefence->Roughness = 0.25f;
+	wirefence->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	wirefence->Roughness = 0.95f;
 
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "treeSprites";
@@ -1462,23 +1464,23 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 
 		y1 += 13.0f;
 		auto boxRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(1.0f, 1.0f, 1.0f));
+		XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(1.0f, y, 1.0f));
 		XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex1++;
 		boxRitem->Mat = mMaterials["wirefence"].get();
-		boxRitem->Geo = mGeometries["boxGeo"].get();
+		boxRitem->Geo = mGeometries["objGeoTank"].get();
 		boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		boxRitem->IndexCount = boxRitem->Geo->DrawArgs["objTank"].IndexCount;
+		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["objTank"].StartIndexLocation;
+		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["objTanka"].BaseVertexLocation;
 
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem.get());
 		mAllRitems.push_back(std::move(boxRitem));
 
 		// Create Physics Objects
-		float mass = 1.0f;
+		float mass = 15.0f;
 		float stepTime = 0.0f;
-		XMFLOAT3 position = XMFLOAT3(0.0f, 1.0f, -10.0f + i * 5.0f);
+		XMFLOAT3 position = XMFLOAT3(0.0f, 0.0f, -10.0f + i * 35.0f);
 		XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
 		XMFLOAT3 center = XMFLOAT3(0.0f + (2.0f / 2), 1.0f + (2.0f / 2), (-10.0f + i * 5.0f) + (2.0f / 2));
 		XMFLOAT3 extents = XMFLOAT3(1.0f, 1.0f, 1.0f);
@@ -1513,39 +1515,52 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	float x1 = MathHelper::RandF(-130.0f, 130.0f);
 	float z1 = MathHelper::RandF(-130.0f, 130.0f);
 	float y2 = GetHillsHeight(x1, z1);
-	auto objBoxRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&objBoxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(35.0f, 1.0f, 1.0f));
+	auto objTankitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objTankitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(35.0f, 1.0f, 1.0f));
 	//XMStoreFloat4x4(&objBoxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	objBoxRitem->TexTransform = MathHelper::Identity4x4();
-	objBoxRitem->ObjCBIndex = 3;
-	objBoxRitem->Mat = mMaterials["wirefence"].get();
-	objBoxRitem->Geo = mGeometries["objGeo"].get();
-	objBoxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	objBoxRitem->IndexCount = objBoxRitem->Geo->DrawArgs["obj"].IndexCount;
-	objBoxRitem->StartIndexLocation = objBoxRitem->Geo->DrawArgs["obj"].StartIndexLocation;
-	objBoxRitem->BaseVertexLocation = objBoxRitem->Geo->DrawArgs["obj"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBoxRitem.get());
-	mAllRitems.push_back(std::move(objBoxRitem));
+	objTankitem->TexTransform = MathHelper::Identity4x4();
+	objTankitem->ObjCBIndex = 3;
+	objTankitem->Mat = mMaterials["wirefence"].get();
+	objTankitem->Geo = mGeometries["objGeoTank"].get();
+	objTankitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objTankitem->IndexCount = objTankitem->Geo->DrawArgs["objTank"].IndexCount;
+	objTankitem->StartIndexLocation = objTankitem->Geo->DrawArgs["objTank"].StartIndexLocation;
+	objTankitem->BaseVertexLocation = objTankitem->Geo->DrawArgs["objTank"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objTankitem.get());
+	mAllRitems.push_back(std::move(objTankitem));
 //}
+
+	auto objHouseItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objHouseItem->World, XMMatrixScaling(14.0f, 14.0f, 14.0f) * XMMatrixTranslation(150.0f, 1.0f, 0.0f));
+	objHouseItem->TexTransform = MathHelper::Identity4x4();
+	objHouseItem->ObjCBIndex = 4;
+	objHouseItem->Mat = mMaterials["wirefence"].get();
+	objHouseItem->Geo = mGeometries["objGeoHouse"].get();
+	objHouseItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objHouseItem->IndexCount = objHouseItem->Geo->DrawArgs["objHouse"].IndexCount;
+	objHouseItem->StartIndexLocation = objHouseItem->Geo->DrawArgs["objHouse"].StartIndexLocation;
+	objHouseItem->BaseVertexLocation = objHouseItem->Geo->DrawArgs["objHouse"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objHouseItem.get());
+	mAllRitems.push_back(std::move(objHouseItem));
 		
-	auto objBoxRitem1 = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&objBoxRitem1->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(-35.0f, 1.0f, 1.0f));
+	auto objTankitem2 = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objTankitem2->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(-35.0f, 1.0f, 1.0f));
 	//XMStoreFloat4x4(&objBoxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	objBoxRitem1->TexTransform = MathHelper::Identity4x4();
-	objBoxRitem1->ObjCBIndex = 4;
-	objBoxRitem1->Mat = mMaterials["wirefence"].get();
-	objBoxRitem1->Geo = mGeometries["objGeo"].get();
-	objBoxRitem1->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	objBoxRitem1->IndexCount = objBoxRitem1->Geo->DrawArgs["obj"].IndexCount;
-	objBoxRitem1->StartIndexLocation = objBoxRitem1->Geo->DrawArgs["obj"].StartIndexLocation;
-	objBoxRitem1->BaseVertexLocation = objBoxRitem1->Geo->DrawArgs["obj"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBoxRitem1.get());
-	mAllRitems.push_back(std::move(objBoxRitem1));
+	objTankitem2->TexTransform = MathHelper::Identity4x4();
+	objTankitem2->ObjCBIndex = 5;
+	objTankitem2->Mat = mMaterials["wirefence"].get();
+	objTankitem2->Geo = mGeometries["objGeoTank"].get();
+	objTankitem2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objTankitem2->IndexCount = objTankitem2->Geo->DrawArgs["objTank"].IndexCount;
+	objTankitem2->StartIndexLocation = objTankitem2->Geo->DrawArgs["objTank"].StartIndexLocation;
+	objTankitem2->BaseVertexLocation = objTankitem2->Geo->DrawArgs["objTank"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objTankitem2.get());
+	mAllRitems.push_back(std::move(objTankitem2));
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
 	XMStoreFloat4x4(&wavesRitem->TexTransform, XMMatrixScaling(15.0f, 15.0f, 1.0f));
-	wavesRitem->ObjCBIndex = 5;
+	wavesRitem->ObjCBIndex = 6;
 	wavesRitem->Mat = mMaterials["water"].get();
 	wavesRitem->Geo = mGeometries["waterGeo"].get();
 	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1560,7 +1575,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	gridRitem->ObjCBIndex = 6;
+	gridRitem->ObjCBIndex = 7;
 	gridRitem->Mat = mMaterials["grass"].get();
 	gridRitem->Geo = mGeometries["landGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1572,7 +1587,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
 	treeSpritesRitem->World = MathHelper::Identity4x4();
-	treeSpritesRitem->ObjCBIndex = 7;
+	treeSpritesRitem->ObjCBIndex = 8;
 	treeSpritesRitem->Mat = mMaterials["treeSprites"].get();
 	treeSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
 	treeSpritesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
@@ -1585,13 +1600,26 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	auto objMod = std::make_unique<RenderItem>();
 	objMod->World = MathHelper::Identity4x4();
 	XMStoreFloat4x4(&objMod->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	objMod->ObjCBIndex = 8;
+	objMod->ObjCBIndex = 9;
 	objMod->Mat = mMaterials["water"].get();
 	objMod->Geo = mGeometries["waterGeo"].get();
 	objMod->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objMod->IndexCount = objMod->Geo->DrawArgs["grid"].IndexCount;
 	objMod->StartIndexLocation = objMod->Geo->DrawArgs["grid"].StartIndexLocation;
 	objMod->BaseVertexLocation = objMod->Geo->DrawArgs["grid"].BaseVertexLocation;
+
+	auto objBulletItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&objBulletItem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f)* XMMatrixTranslation(20.0f, 20.0f, 0.0f));
+	objBulletItem->TexTransform = MathHelper::Identity4x4();
+	objBulletItem->ObjCBIndex = 10;
+	objBulletItem->Mat = mMaterials["wirefence"].get();
+	objBulletItem->Geo = mGeometries["objGeoBullet"].get();
+	objBulletItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objBulletItem->IndexCount = objBulletItem->Geo->DrawArgs["objBullet"].IndexCount;
+	objBulletItem->StartIndexLocation = objBulletItem->Geo->DrawArgs["objBullet"].StartIndexLocation;
+	objBulletItem->BaseVertexLocation = objBulletItem->Geo->DrawArgs["objBullet"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBulletItem.get());
+	mAllRitems.push_back(std::move(objBulletItem));
 
 	mRitemLayer[(int)RenderLayer::Transparent].push_back(objMod.get());
 
