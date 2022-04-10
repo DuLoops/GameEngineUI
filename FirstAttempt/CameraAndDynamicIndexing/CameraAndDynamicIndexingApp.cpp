@@ -118,9 +118,9 @@ private:
 
 	void BuildRenderItems();
 	// Build object+physics
-	void BuildTank(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 roatation, UINT& objCBIndex);
-	void BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 roatation, UINT& objCBIndex);
-	void BuildTree(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 roatation, UINT& objCBIndex);
+	void BuildTank(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex);
+	void BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex);
+	void BuildTree(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex);
 
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
@@ -581,21 +581,21 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&e->World);
 			XMVECTOR scaleVector = XMVectorZero();
-			XMVECTOR rotationOriginVector = XMVectorZero();
+			XMVECTOR rotationOriginPoint = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
 			XMVECTOR rotationVector = XMVectorZero();
 			XMVECTOR translationVector = XMVectorZero();
 			XMMatrixDecompose(&scaleVector, &rotationVector, &translationVector, worldMatrix);
 
 			// Set properties based on physics objects
 			translationVector = XMVectorSet(currentPhysicsObject->Position().x, currentPhysicsObject->Position().y, currentPhysicsObject->Position().z, 1.0f);
-			rotationVector = XMVectorSet(currentPhysicsObject->RotationQuaternion().x, currentPhysicsObject->RotationQuaternion().y, currentPhysicsObject->RotationQuaternion().z, 1.0f);
+			rotationVector = XMVectorSet(currentPhysicsObject->RotationQuaternion().x, currentPhysicsObject->RotationQuaternion().y, currentPhysicsObject->RotationQuaternion().z, currentPhysicsObject->RotationQuaternion().w);
 			
 			// Don't let object move below ground plane.
 			float adjustedY = MathHelper::Max(XMVectorGetY(translationVector), 0.0f);
 			translationVector = XMVectorSetY(translationVector, adjustedY);
 
 			// Create new world matrix for moving object
-			XMMATRIX newWorldMatrix = XMMatrixAffineTransformation(scaleVector, rotationOriginVector, rotationVector, translationVector);
+			XMMATRIX newWorldMatrix = XMMatrixAffineTransformation(scaleVector, rotationOriginPoint, rotationVector, translationVector);
 			XMStoreFloat4x4(&e->World, newWorldMatrix);
 
 			e->NumFramesDirty = gNumFrameResources;
@@ -1473,10 +1473,10 @@ void CameraAndDynamicIndexingApp::BuildMaterials()
 }
 
 
-void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 rotation, UINT& objCBIndex) {
+void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex) {
 	auto objTankitem = std::make_unique<RenderItem>();
-	XMVECTOR rotationQuaternion = XMVectorSet(rotation.x, rotation.y, rotation.z, 1.0f);
-	XMStoreFloat4x4(&objTankitem->World, XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z) * XMMatrixRotationQuaternion(rotationQuaternion));
+	XMVECTOR tankRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
+	XMStoreFloat4x4(&objTankitem->World, XMMatrixRotationQuaternion(tankRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objTankitem->TexTransform = MathHelper::Identity4x4();
 	objTankitem->ObjCBIndex = objCBIndex++;
 	objTankitem->Mat = mMaterials["wirefence"].get();
@@ -1497,7 +1497,7 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	XMFLOAT3 extents = XMFLOAT3(scaling.x / 2, scaling.y / 2, scaling.z / 2);
 	BoundingBox boundingBox = BoundingBox(center, extents);
 	XMFLOAT3 velocity = XMFLOAT3(10.0f, 0.0f, 0.0f);
-	auto physicsObject = std::make_unique<PhysicsObject>(position, rotation, velocity, force, boundingBox, mass, stepTime);
+	auto physicsObject = std::make_unique<PhysicsObject>(position, rotationQuaternion, velocity, force, boundingBox, mass, stepTime);
 	allPhysicsObjects.push_back(std::move(physicsObject));
 
 	/*
@@ -1512,11 +1512,10 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 }
 
 
-void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 rotation, UINT& objCBIndex) {
+void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex) {
 	auto objHouseItem = std::make_unique<RenderItem>();
-	//XMStoreFloat4x4(&objHouseItem->World, XMMatrixScaling(14.0f, 14.0f, 14.0f) * XMMatrixTranslation(150.0f, 1.0f, 0.0f
-	XMVECTOR rotationQuaternion = XMVectorSet(rotation.x, rotation.y, rotation.z, 1.0f);
-	XMStoreFloat4x4(&objHouseItem->World, XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z) * XMMatrixRotationQuaternion(rotationQuaternion));
+	XMVECTOR houseRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
+	XMStoreFloat4x4(&objHouseItem->World, XMMatrixRotationQuaternion(houseRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objHouseItem->TexTransform = MathHelper::Identity4x4();
 	objHouseItem->ObjCBIndex = objCBIndex++;
 	objHouseItem->Mat = mMaterials["wirefence"].get();
@@ -1530,7 +1529,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 
 	// Create Physics Objects
 	float mass = 15.0f;
-	float stepTime = 0.0f;
+	float stepTime = 10.0f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 	XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	XMFLOAT3 center = XMFLOAT3(translation.x + (scaling.x / 2), translation.y + (scaling.y / 2), translation.z + (scaling.z / 2)); // Assuming bottom corner fo object
@@ -1540,7 +1539,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	// Set the physics of each oject differently
 	XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-	auto physicsObject = std::make_unique<PhysicsObject>(position, rotation, velocity, force, boundingBox, mass, stepTime);
+	auto physicsObject = std::make_unique<PhysicsObject>(position, rotationQuaternion, velocity, force, boundingBox, mass, stepTime);
 	allPhysicsObjects.push_back(std::move(physicsObject));
 
 	/*
@@ -1554,10 +1553,10 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	allGameObjects.push_back(std::move(gameObject));*/
 }
 
-void CameraAndDynamicIndexingApp::BuildTree(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT3 rotation, UINT& objCBIndex) {
+void CameraAndDynamicIndexingApp::BuildTree(XMFLOAT3 scaling, XMFLOAT3 translation, XMFLOAT4 rotationQuaternion, UINT& objCBIndex) {
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
-	XMVECTOR rotationQuaternion = XMVectorSet(rotation.x, rotation.y, rotation.z, 1.0f);
-	XMStoreFloat4x4(&treeSpritesRitem->World, XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z) * XMMatrixRotationQuaternion(rotationQuaternion));
+	XMVECTOR treeRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
+	XMStoreFloat4x4(&treeSpritesRitem->World, XMMatrixRotationQuaternion(treeRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	treeSpritesRitem->World = MathHelper::Identity4x4();
 	treeSpritesRitem->ObjCBIndex = objCBIndex++;
 	treeSpritesRitem->Mat = mMaterials["treeSprites"].get();
@@ -1595,6 +1594,13 @@ void CameraAndDynamicIndexingApp::BuildTree(XMFLOAT3 scaling, XMFLOAT3 translati
 	allGameObjects.push_back(std::move(gameObject));*/
 }
 
+XMFLOAT4 getRotateObjectQuaternionAroundY(float angleRadians) {
+	XMVECTOR rotationQuaternionVector = XMQuaternionRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), angleRadians);
+	XMFLOAT4 rotationQuaternion;
+	XMStoreFloat4(&rotationQuaternion, rotationQuaternionVector);
+	return rotationQuaternion;
+}
+
 void CameraAndDynamicIndexingApp::BuildRenderItems()
 {
 
@@ -1605,23 +1611,18 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 
 	XMFLOAT3 tankScaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
 	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, 1.0f, 1.0f);
-	//XMVECTOR rotationVector = XMQuaternionRotationAxis(XMAxis, 3.0f);
-	//XMFLOAT3 tankRotation;
-	//XMStoreFloat3(&tankRotation, rotationVector);
-	XMFLOAT3 tankRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-
-	//Build object + physics
-	BuildTank(tankScaling, tankTranslation, tankRotation, objCBIndex);
+	XMFLOAT4 tankRotationQuaternion = getRotateObjectQuaternionAroundY(0.5 * pi);
+	BuildTank(tankScaling, tankTranslation, tankRotationQuaternion, objCBIndex);
 	
 	XMFLOAT3 houseScaling = XMFLOAT3(14.0f, 14.0f, 14.0f);
 	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 1.0f, 0.0f);
-	XMFLOAT3 houseRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	BuildHouse(houseScaling, houseTranslation, houseRotation, objCBIndex);
+	XMFLOAT4 houseRotationQuaternion = getRotateObjectQuaternionAroundY(0);
+	BuildHouse(houseScaling, houseTranslation, houseRotationQuaternion, objCBIndex);
 
 	XMFLOAT3 treeScaling = XMFLOAT3(10.0f, 10.0f, 10.0f);
 	XMFLOAT3 treeTranslation = XMFLOAT3(-100.0f, 1.0f, 0.0f);
-	XMFLOAT3 treeRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	BuildTree(treeScaling, treeTranslation, treeRotation, objCBIndex);
+	XMFLOAT4 treeRotationQuaternion = getRotateObjectQuaternionAroundY(0);
+	BuildTree(treeScaling, treeTranslation, treeRotationQuaternion, objCBIndex);
 
 
 	/*

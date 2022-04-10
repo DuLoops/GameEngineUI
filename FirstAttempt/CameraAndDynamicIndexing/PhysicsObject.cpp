@@ -2,7 +2,7 @@
 
 using namespace DirectX;
 
-PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingRotationQuaternion, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
+PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT4 startingRotationQuaternion, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
 {
 	position = startingPosition;
 	rotationQuaternion = startingRotationQuaternion;
