@@ -9,12 +9,13 @@ using namespace DirectX;
 class PhysicsObject
 {
 public:
-    PhysicsObject(XMFLOAT3 position, XMFLOAT4 rotationQuaternion, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
+    PhysicsObject(XMFLOAT3 position, XMFLOAT3 centerPoint, XMFLOAT4 rotationQuaternion, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
     PhysicsObject& operator=(const PhysicsObject& rhPhysicsObject);
     ~PhysicsObject();
 
     const XMFLOAT3& Position()const { return position; }
+    const XMFLOAT3& CenterPoint()const { return centerPoint; }
     const XMFLOAT4& RotationQuaternion()const { return rotationQuaternion; }
     //const XMFLOAT3& RotationOrigin()const { return rotationOrigin; }
 
@@ -37,6 +38,7 @@ private:
     float mass;
 
     XMFLOAT3 position;
+    XMFLOAT3 centerPoint;
     XMFLOAT4 rotationQuaternion;
     //const XMFLOAT3 rotationOrigin;
 
