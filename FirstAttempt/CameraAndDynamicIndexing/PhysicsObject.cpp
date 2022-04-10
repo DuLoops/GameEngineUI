@@ -2,9 +2,10 @@
 
 using namespace DirectX;
 
-PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
+PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingRotationQuaternion, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
 {
 	position = startingPosition;
+	rotationQuaternion = startingRotationQuaternion;
 	velocity = startingVelocity;
 	force = startingForce;
 	boundingBox = objBoundingBox;
@@ -49,6 +50,7 @@ PhysicsObject& PhysicsObject::operator=(const PhysicsObject& rhPhysicsObject)
 {
 	if (this != &rhPhysicsObject) {
 		position = rhPhysicsObject.position;
+		rotationQuaternion = rhPhysicsObject.rotationQuaternion;
 		velocity = rhPhysicsObject.velocity;
 		force = rhPhysicsObject.force;
 		boundingBox = rhPhysicsObject.boundingBox;

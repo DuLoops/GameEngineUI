@@ -9,26 +9,40 @@ using namespace DirectX;
 class PhysicsObject
 {
 public:
-    PhysicsObject(XMFLOAT3 position, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
+    PhysicsObject(XMFLOAT3 position, XMFLOAT3 rotationQuaternion, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
     PhysicsObject& operator=(const PhysicsObject& rhPhysicsObject);
     ~PhysicsObject();
 
     const XMFLOAT3& Position()const { return position; }
+    const XMFLOAT3& RotationQuaternion()const { return rotationQuaternion; }
+    const XMFLOAT3& RotationOrigin()const { return rotationOrigin; }
+
     const XMFLOAT3& Velocity()const { return velocity; }
     const XMFLOAT3& Force()const { return force; }
     const BoundingBox& ObjBoundingBox()const { return boundingBox; }
     const float Mass()const { return mass; }
 
+    void setPoition(float x, float y, float z) { position = { x, y, z }; }
+    void setRotationQuaternion(float x, float y, float z) { rotationQuaternion = { x, y, z }; }
+    void setVelocity(float x, float y, float z) { velocity = { x, y, z }; }
+    void setForce(float x, float y, float z) { force = { x, y, z }; }
+    void setMass(float newMass) { mass = newMass; }
+
     void Update(float dt);
 
 private:
-    XMFLOAT3 position;
     XMFLOAT3 velocity;
     XMFLOAT3 force;
-    BoundingBox boundingBox;
     float mass;
+
+    XMFLOAT3 position;
+    XMFLOAT3 rotationQuaternion;
+    const XMFLOAT3 rotationOrigin = { 0.0f, 0.0f, 0.0f };
+
     float timeStep = 0.0f;
+
+    BoundingBox boundingBox;
 };
 
 #endif // PHYSICS_OBJECT_H
