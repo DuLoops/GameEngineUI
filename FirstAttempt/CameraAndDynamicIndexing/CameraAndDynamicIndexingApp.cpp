@@ -297,8 +297,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	//Initialize_Client();
-	//ConnectToServer();
+	Initialize_Client();
+	ConnectToServer();
 	return true;
 }
 
@@ -713,6 +713,16 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
 		}
 
+	}
+	else {
+		char buffer[1];
+		int error = recv(s, buffer, 1, 0);
+		if (error == INVALID_SOCKET) {
+			std::wstring msg = L"Server connection failed!";
+			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+		}
+		int ibuffer = buffer[0];
+		playerGameObject = allGameObjects[ibuffer].get();
 	}
 
 	//playerGameObject->GetData();
@@ -1240,13 +1250,6 @@ int CameraAndDynamicIndexingApp::ConnectToServer()
 
 	send(s, buffer, 14, 0);
 	recv(s, serverArr, 126, 0);
-	recv(s, serverArr, 126, 0);
-
-	wchar_t wtext[126];
-	mbstowcs(wtext, serverArr, strlen(serverArr) + 1);
-	LPWSTR ptr = wtext;
-
-	MessageBox(0, ptr, 0, 0);
 }
 
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
