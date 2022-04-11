@@ -1027,8 +1027,8 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 				int indice = 1;
 				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
 				indice = parseBufferForPosition(temp, buffer, indice);
-				indice = parseBufferForRotation(temp, buffer, indice);
-				//indice = parseBufferForOrientation(temp, buffer, indice);
+				//indice = parseBufferForRotation(temp, buffer, indice);
+				indice = parseBufferForOrientation(temp, buffer, indice);
 				indice = parseBufferForVelocity(temp, buffer, indice);
 			}
 		});
