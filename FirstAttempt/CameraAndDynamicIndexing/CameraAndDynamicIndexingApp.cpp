@@ -12,6 +12,7 @@
 #include <random>
 // Iostream - STD I/O Library
 #include <iostream>
+#include <string>
 #include <fstream>
 
 // All physics calculations taking place here
@@ -223,8 +224,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		if (!theApp.Initialize()) {
 			return 0;
 		}
-		theApp.Initialize_Client();
-		theApp.ConnectToServer();
 		return theApp.Run();
 	}
 	catch (DxException& e)
@@ -295,6 +294,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
+	Initialize_Client();
+	ConnectToServer();
 	return true;
 }
 
@@ -1192,10 +1193,20 @@ int CameraAndDynamicIndexingApp::ConnectToServer()
 	}
 	else { printf("connected"); }
 
-	if (connect(s, (LPSOCKADDR)&you, sizeof(you)) == 0)
-	{
-		return 1;
-	}
+	char arr[] = "This is a test";
+	char* buffer = arr;
+	char serverArr[126];
+	//char* bufferArr = serverArr;
+
+	send(s, buffer, 14, 0);
+	recv(s, serverArr, 126, 0);
+	recv(s, serverArr, 126, 0);
+
+	wchar_t wtext[126];
+	mbstowcs(wtext, serverArr, strlen(serverArr) + 1);
+	LPWSTR ptr = wtext;
+
+	MessageBox(0, ptr, 0, 0);
 }
 
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
