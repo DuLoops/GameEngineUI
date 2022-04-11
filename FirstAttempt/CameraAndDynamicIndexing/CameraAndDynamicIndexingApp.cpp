@@ -490,65 +490,55 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 
+	if ((GetAsyncKeyState('A') & 0x8000) && playerGameObject != nullptr) {
+		playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
+	}
+	else if ((GetAsyncKeyState('D') & 0x8000) && playerGameObject != nullptr) {
+		playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
+	}
+	else if ((GetAsyncKeyState('W') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+	}
+	else if ((GetAsyncKeyState('S') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+	}
+
+	if (GetAsyncKeyState('A') & 0x8000) {
+		mCamera.Strafe(-100.0f * dt);
+	}
+	if (GetAsyncKeyState('D') & 0x8000) {
+		mCamera.Strafe(100.0f * dt);
+	}
 	if (GetAsyncKeyState('W') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
-			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-			XMFLOAT3 forwardVelocity;
-			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-			/*
-			XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-			XMVECTOR actualForwardVector = XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-			XMFLOAT3 forwardForce;
-			XMStoreFloat3(&forwardForce, actualForwardVelocityVector);
-			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-
-			*/
-		}
-
 		mCamera.Walk(100.0f * dt);
+	}
+	if (GetAsyncKeyState('S') & 0x8000) {
+		mCamera.Walk(-100.0f * dt);
 	}
 
 	if (GetAsyncKeyState(VK_UP) & 0x8000) {
 		mCamera.Pitch(-1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('S') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-			XMFLOAT3 forwardVelocity;
-			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-		}
-
-		mCamera.Walk(-100.0f * dt);
-	}
-
 	if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
 		mCamera.Pitch(1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('A') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
-		}
-
-		mCamera.Strafe(-100.0f * dt);
-	}
+	
 
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
 		mCamera.RotateY(-1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('D') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
-		}
-
-		mCamera.Strafe(100.0f * dt);
-	}
+	
 
 	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
 		mCamera.RotateY(1.0f * dt);
@@ -674,7 +664,7 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 
 void CameraAndDynamicIndexingApp::UpdateGameLoop()
 {
-	
+
 }
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
@@ -1592,7 +1582,7 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 
 	// Create Physics Objects
 	float mass = 15.0f;
-	float coefficientFriction = 1.0;
+	float coefficientFriction = 3.0;
 	float stepTime = 0.0f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
