@@ -94,6 +94,7 @@ void PhysicsObject::Update(float dt)
 
 		XMStoreFloat3(&position, newPos);
 		XMStoreFloat3(&centerPoint, newCenter);
+		XMStoreFloat3(&velocity, newVelocityVector);
 		boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
 
 		force = XMFLOAT3(0, 0, 0);
