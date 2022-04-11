@@ -43,7 +43,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PhysicsWorld.cpp">
-	  <Filter>Source Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Waves.cpp">
       <Filter>Source Files</Filter>
@@ -107,6 +107,9 @@
       <Filter>Resource Files</Filter>
     </Media>
     <Media Include="Sounds\explo1.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="Sounds\drive.wav">
       <Filter>Resource Files</Filter>
     </Media>
   </ItemGroup>
