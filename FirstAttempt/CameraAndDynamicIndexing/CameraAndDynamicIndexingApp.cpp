@@ -304,8 +304,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	Initialize_Client();
-	ConnectToServer();
+	//Initialize_Client();
+	//ConnectToServer();
 	return true;
 }
 
@@ -675,8 +675,6 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 	{
 		if (e->physics != nullptr) {
 			auto& currentPhysicsObject = e->physics;
-			//if (e->ObjCBIndex < allPhysicsObjects.size()) {
-			//	auto& currentPhysicsObject = allPhysicsObjects[e->ObjCBIndex];
 
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&e->World);
 			XMVECTOR scaleVector = XMVectorZero();
@@ -690,8 +688,8 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 			rotationVector = XMVectorSet(currentPhysicsObject->RotationQuaternion().x, currentPhysicsObject->RotationQuaternion().y, currentPhysicsObject->RotationQuaternion().z, currentPhysicsObject->RotationQuaternion().w);
 
 			// Don't let object move below ground plane.
-			float adjustedY = MathHelper::Max(XMVectorGetY(translationVector), 0.0f);
-			translationVector = XMVectorSetY(translationVector, adjustedY);
+			//float adjustedY = MathHelper::Max(XMVectorGetY(translationVector), 0.0f);
+			//translationVector = XMVectorSetY(translationVector, adjustedY);
 
 			// Create new world matrix for moving object
 			XMMATRIX newWorldMatrix = XMMatrixAffineTransformation(scaleVector, rotationOriginPoint, rotationVector, translationVector);
@@ -725,6 +723,7 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		}
 
 	}
+	/*
 	else {
 		char buffer[1];
 		int error = recv(s, buffer, 1, 0);
@@ -735,6 +734,7 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		int ibuffer = buffer[0];
 		playerGameObject = allGameObjects[ibuffer].get();
 	}
+	*/
 
 	//playerGameObject->GetData();
 	// Send to server
