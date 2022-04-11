@@ -14,6 +14,7 @@ public:
 
     float OrientationRadians()const { return objectOrientationRadians; }
     void ChangeOrientationRadians(float deltaRadians);
+    void SetOrientationRadians(float radians);
     PhysicsObject* ObjectPhysicsData() { return objectPhysicsData; }
 
     //void UpdateGameObject(float objectOrientationRadians, float xPosition, float yPosition);

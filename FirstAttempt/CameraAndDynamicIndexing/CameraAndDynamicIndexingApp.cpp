@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <ppltasks.h>
 
 // All physics calculations taking place here
 #include "PhysicsWorld.h"
@@ -46,6 +47,8 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 bool running = true;
+bool started = false;
+int index;
 SOCKET s;
 sockaddr_in you;
 char message[2];
@@ -711,6 +714,246 @@ bool checkOutBounds(XMFLOAT3 gameObjectPos) {
 	return false;
 }
 
+int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		x /= 10;
+	}
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = yDecimal; i < 7; i++) {
+		y /= 10;
+	}
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = zDecimal; i < 7; i++) {
+		z /= 10;
+	}
+	if (zNegative) {
+		z *= -1;
+	}
+	temp->ObjectPhysicsData()->setPoition(x, y, z);
+	return index;
+}
+
+int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		x /= 10;
+	}
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		y /= 10;
+	}
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = zDecimal; i < 7; i++) {
+		z /= 10;
+	}
+	if (zNegative) {
+		z *= -1;
+	}
+	float w = 0;
+	int wDecimal = 7;
+	bool wNegative = (buffer[index] == '-');
+	if (wNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			wDecimal = i;
+		}
+		else {
+			w *= 10;
+			w += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = zDecimal; i < 7; i++) {
+		w /= 10;
+	}
+	if (wNegative) {
+		w *= -1;
+	}
+	temp->ObjectPhysicsData()->setRotationQuaternion(XMFLOAT4(x, y, z, w));
+	return index;
+}
+
+int parseBufferForOrientation(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		x /= 10;
+	}
+	if (xNegative) {
+		x *= -1;
+	}
+	temp->SetOrientationRadians(x);
+	return index;
+}
+
+int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		x /= 10;
+	}
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = xDecimal; i < 7; i++) {
+		y /= 10;
+	}
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 8; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	for (int i = zDecimal; i < 7; i++) {
+		z /= 10;
+	}
+	if (zNegative) {
+		z *= -1;
+	}
+	temp->ObjectPhysicsData()->setVelocity(x, y, z);
+	return index;
+}
+
 // At init 
 // Server send each client an integer for the index of teh game obejcts array taht is their player tank
 
@@ -725,15 +968,59 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		}
 
 	}
-	else {
-		char buffer[1];
-		int error = recv(s, buffer, 1, 0);
-		if (error == INVALID_SOCKET) {
-			std::wstring msg = L"Server connection failed!";
-			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-		}
-		int ibuffer = buffer[0];
-		playerGameObject = allGameObjects[ibuffer].get();
+	else if (started == false) {
+		auto t = concurrency::create_task([this]() {
+			char buffer[1];
+			int error = recv(s, buffer, 1, 0);
+			if (error == INVALID_SOCKET) {
+				std::wstring msg = L"Server connection failed!";
+				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+			}
+			int ibuffer = buffer[0] - 1;
+			return ibuffer;
+		}).then([this](int result) {
+			if (0 <= result && result <= 3) {
+				started = true;
+				index = result;
+				playerGameObject = allGameObjects[result].get();
+			}
+		});
+	}
+	if (started == true) {
+		auto t = concurrency::create_task([this]() {
+			char buffer[128];
+			int length = 0;
+			length += sprintf_s(buffer, 128, "%d", index);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().x);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().y);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().z);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().x);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().y);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().z);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().w);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->OrientationRadians());
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().x);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().y);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().z);
+			if ( 89 <= length && length <= 127) {
+				send(s, buffer, 128, 0);
+			}
+		}).then([this]() {
+			char buffer[128];
+			int error = recv(s, buffer, 128, 0);
+			if (error == INVALID_SOCKET) {
+				std::wstring msg = L"Failed to grab from server!";
+				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+			}
+			if ('0' <= buffer[0] && buffer[0] <= '3') {
+				int indice = 1;
+				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
+				indice = parseBufferForPosition(temp, buffer, indice);
+				indice = parseBufferForRotation(temp, buffer, indice);
+				indice = parseBufferForOrientation(temp, buffer, indice);
+				indice = parseBufferForVelocity(temp, buffer, indice);
+			}
+		});
 	}
 
 	//playerGameObject->GetData();
@@ -746,8 +1033,6 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 	//}
 
 }
-
-
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
 {
