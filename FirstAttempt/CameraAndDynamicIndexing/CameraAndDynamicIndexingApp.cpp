@@ -1519,12 +1519,38 @@ void CameraAndDynamicIndexingApp::BuildMaterials()
 	bricks0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
 	bricks0->Roughness = 0.1f;
 
+	auto tank = std::make_unique<Material>();
+	tank->Name = "tank";
+	tank->MatCBIndex = 5;
+	tank->DiffuseSrvHeapIndex = 2;
+	tank->DiffuseAlbedo = XMFLOAT4(Colors::DarkGreen);
+	tank->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	tank->Roughness = 0.1f;
+
+	auto wood = std::make_unique<Material>();
+	wood->Name = "wood";
+	wood->MatCBIndex = 6;
+	wood->DiffuseSrvHeapIndex = 2;
+	wood->DiffuseAlbedo = XMFLOAT4(Colors::SaddleBrown);
+	wood->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	wood->Roughness = 0.1f;
+
+	auto bullet = std::make_unique<Material>();
+	bullet->Name = "bullet";
+	bullet->MatCBIndex = 7;
+	bullet->DiffuseSrvHeapIndex = 2;
+	bullet->DiffuseAlbedo = XMFLOAT4(Colors::DarkGoldenrod);
+	bullet->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	bullet->Roughness = 0.1f;
 
 	mMaterials["grass"] = std::move(grass);
 	mMaterials["water"] = std::move(water);
 	mMaterials["wirefence"] = std::move(wirefence);
 	mMaterials["treeSprites"] = std::move(treeSprites);
 	mMaterials["bricks0"] = std::move(bricks0);
+	mMaterials["tank"] = std::move(tank);
+	mMaterials["wood"] = std::move(wood);
+	mMaterials["bullet"] = std::move(bullet);
 }
 
 XMFLOAT4 getRotateObjectQuaternionAroundY(float angleRadians) {
@@ -1542,7 +1568,7 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	XMStoreFloat4x4(&objTankitem->World, XMMatrixRotationQuaternion(tankRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objTankitem->TexTransform = MathHelper::Identity4x4();
 	objTankitem->ObjCBIndex = objCBIndex++;
-	objTankitem->Mat = mMaterials["wirefence"].get();
+	objTankitem->Mat = mMaterials["tank"].get();
 	objTankitem->Geo = mGeometries["objGeoTank"].get();
 	objTankitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objTankitem->IndexCount = objTankitem->Geo->DrawArgs["objTank"].IndexCount;
@@ -1592,7 +1618,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	XMStoreFloat4x4(&objHouseItem->World, XMMatrixRotationQuaternion(houseRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objHouseItem->TexTransform = MathHelper::Identity4x4();
 	objHouseItem->ObjCBIndex = objCBIndex++;
-	objHouseItem->Mat = mMaterials["wirefence"].get();
+	objHouseItem->Mat = mMaterials["wood"].get();
 	objHouseItem->Geo = mGeometries["objGeoHouse"].get();
 	objHouseItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objHouseItem->IndexCount = objHouseItem->Geo->DrawArgs["objHouse"].IndexCount;
@@ -1644,7 +1670,7 @@ void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 transla
 	XMStoreFloat4x4(&objBulletItem->World, XMMatrixRotationQuaternion(bulletRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objBulletItem->TexTransform = MathHelper::Identity4x4();
 	objBulletItem->ObjCBIndex = objCBIndex++;
-	objBulletItem->Mat = mMaterials["wirefence"].get();
+	objBulletItem->Mat = mMaterials["bullet"].get();
 	objBulletItem->Geo = mGeometries["objGeoBullet"].get();
 	objBulletItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objBulletItem->IndexCount = objBulletItem->Geo->DrawArgs["objBullet"].IndexCount;
