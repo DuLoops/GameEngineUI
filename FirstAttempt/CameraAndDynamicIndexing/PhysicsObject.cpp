@@ -138,3 +138,9 @@ void PhysicsObject::setPoition(float x, float y, float z) {
 
 	XMStoreFloat3(&position, newPositionVector);
 }
+
+
+XMFLOAT3 PhysicsObject::getPosition()
+{
+	return XMFLOAT3{ 1, 2,3 };
+}

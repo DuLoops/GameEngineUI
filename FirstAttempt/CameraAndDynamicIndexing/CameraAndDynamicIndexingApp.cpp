@@ -675,6 +675,7 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 void CameraAndDynamicIndexingApp::UpdateGameLoop()
 {
 	
+	//playerGameObject = nullptr;
 }
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)

@@ -34,6 +34,8 @@ public:
 
     void applyForce(float x, float y, float z) { force = { force.x + x, force.y + y, force.z + z }; }
 
+    XMFLOAT3 getPosition();
+
     void Update(float dt);
 
 private:
