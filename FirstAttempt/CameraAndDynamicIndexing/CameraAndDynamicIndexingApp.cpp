@@ -307,8 +307,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	//Initialize_Client();
-	//ConnectToServer();
+	Initialize_Client();
+	ConnectToServer();
 	return true;
 }
 
