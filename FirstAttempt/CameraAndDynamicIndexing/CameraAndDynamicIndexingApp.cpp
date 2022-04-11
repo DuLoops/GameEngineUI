@@ -1014,15 +1014,15 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().x);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().y);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().z);
-			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().x);
-			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().y);
-			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().z);
-			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().w);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().x);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().y);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().z);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().w);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->OrientationRadians());
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().x);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().y);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().z);
-			if ( 89 <= length && length <= 127) {
+			if ( 57 <= length && length <= 127) {
 				send(s, buffer, 128, 0);
 			}
 		}).then([this]() {
@@ -1037,7 +1037,7 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
 				indice = parseBufferForPosition(temp, buffer, indice);
 				indice = parseBufferForRotation(temp, buffer, indice);
-				indice = parseBufferForOrientation(temp, buffer, indice);
+				//indice = parseBufferForOrientation(temp, buffer, indice);
 				indice = parseBufferForVelocity(temp, buffer, indice);
 			}
 		});
