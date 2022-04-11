@@ -734,14 +734,15 @@ bool checkOutBounds(XMFLOAT3 gameObjectPos) {
 	return false;
 }
 
-int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
+int parseBufferForPosition(GameObject* temp, char buffer[], int index) {
 	float x = 0;
 	bool xNegative = (buffer[index] == '-');
 	int xDecimal = 7;
 	if (xNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			xDecimal = i;
+			i = 0;
 		}
 		else {
 			x *= 10;
@@ -749,9 +750,7 @@ int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		x /= 10;
-	}
+	x /= 1000000;
 	if (xNegative) {
 		x *= -1;
 	}
@@ -759,9 +758,10 @@ int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
 	bool yNegative = (buffer[index] == '-');
 	int yDecimal = 7;
 	if (yNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			yDecimal = i;
+			i = 0;
 		}
 		else {
 			y *= 10;
@@ -769,9 +769,7 @@ int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = yDecimal; i < 7; i++) {
-		y /= 10;
-	}
+	y /= 1000000;
 	if (yNegative) {
 		y *= -1;
 	}
@@ -779,9 +777,10 @@ int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
 	int zDecimal = 7;
 	bool zNegative = (buffer[index] == '-');
 	if (zNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			zDecimal = i;
+			i = 0;
 		}
 		else {
 			z *= 10;
@@ -789,9 +788,7 @@ int parseBufferForPosition(GameObject *temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = zDecimal; i < 7; i++) {
-		z /= 10;
-	}
+	z /= 1000000;
 	if (zNegative) {
 		z *= -1;
 	}
@@ -804,9 +801,10 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 	bool xNegative = (buffer[index] == '-');
 	int xDecimal = 7;
 	if (xNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			xDecimal = i;
+			i = 0;
 		}
 		else {
 			x *= 10;
@@ -814,9 +812,7 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		x /= 10;
-	}
+	x /= 1000000;
 	if (xNegative) {
 		x *= -1;
 	}
@@ -824,9 +820,10 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 	bool yNegative = (buffer[index] == '-');
 	int yDecimal = 7;
 	if (yNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			yDecimal = i;
+			i = 0;
 		}
 		else {
 			y *= 10;
@@ -834,9 +831,7 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		y /= 10;
-	}
+	y /= 1000000;
 	if (yNegative) {
 		y *= -1;
 	}
@@ -844,9 +839,10 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 	int zDecimal = 7;
 	bool zNegative = (buffer[index] == '-');
 	if (zNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			zDecimal = i;
+			i = 0;
 		}
 		else {
 			z *= 10;
@@ -854,9 +850,7 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = zDecimal; i < 7; i++) {
-		z /= 10;
-	}
+	z /= 1000000;
 	if (zNegative) {
 		z *= -1;
 	}
@@ -864,9 +858,10 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 	int wDecimal = 7;
 	bool wNegative = (buffer[index] == '-');
 	if (wNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			wDecimal = i;
+			i = 0;
 		}
 		else {
 			w *= 10;
@@ -874,9 +869,7 @@ int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = zDecimal; i < 7; i++) {
-		w /= 10;
-	}
+	w /= 1000000;
 	if (wNegative) {
 		w *= -1;
 	}
@@ -889,9 +882,10 @@ int parseBufferForOrientation(GameObject* temp, char buffer[], int index) {
 	bool xNegative = (buffer[index] == '-');
 	int xDecimal = 7;
 	if (xNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			xDecimal = i;
+			i = 0;
 		}
 		else {
 			x *= 10;
@@ -899,9 +893,7 @@ int parseBufferForOrientation(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		x /= 10;
-	}
+	x /= 1000000;
 	if (xNegative) {
 		x *= -1;
 	}
@@ -914,9 +906,10 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 	bool xNegative = (buffer[index] == '-');
 	int xDecimal = 7;
 	if (xNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			xDecimal = i;
+			i = 0;
 		}
 		else {
 			x *= 10;
@@ -924,9 +917,7 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		x /= 10;
-	}
+	x /= 1000000;
 	if (xNegative) {
 		x *= -1;
 	}
@@ -934,9 +925,10 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 	bool yNegative = (buffer[index] == '-');
 	int yDecimal = 7;
 	if (yNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			yDecimal = i;
+			i = 0;
 		}
 		else {
 			y *= 10;
@@ -944,9 +936,7 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = xDecimal; i < 7; i++) {
-		y /= 10;
-	}
+	y /= 1000000;
 	if (yNegative) {
 		y *= -1;
 	}
@@ -954,9 +944,10 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 	int zDecimal = 7;
 	bool zNegative = (buffer[index] == '-');
 	if (zNegative) { index++; }
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (buffer[index] == '.') {
 			zDecimal = i;
+			i = 0;
 		}
 		else {
 			z *= 10;
@@ -964,9 +955,7 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 		}
 		index++;
 	}
-	for (int i = zDecimal; i < 7; i++) {
-		z /= 10;
-	}
+	z /= 1000000;
 	if (zNegative) {
 		z *= -1;
 	}
@@ -994,17 +983,18 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			int error = recv(s, buffer, 1, 0);
 			if (error == INVALID_SOCKET) {
 				std::wstring msg = L"Server connection failed!";
-				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+				exit(1);
 			}
 			int ibuffer = buffer[0] - 1;
 			return ibuffer;
-		}).then([this](int result) {
-			if (0 <= result && result <= 3) {
-				started = true;
-				index = result;
-				playerGameObject = allGameObjects[result].get();
-			}
-		});
+			}).then([this](int result) {
+				if (0 <= result && result <= 3) {
+					started = true;
+					index = result;
+					playerGameObject = allGameObjects[result].get();
+				}
+				});
 	}
 	if (started == true) {
 		auto t = concurrency::create_task([this]() {
@@ -1022,25 +1012,26 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().x);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().y);
 			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().z);
-			if ( 57 <= length && length <= 127) {
+			if (57 <= length && length <= 127) {
 				send(s, buffer, 128, 0);
 			}
-		}).then([this]() {
-			char buffer[128];
-			int error = recv(s, buffer, 128, 0);
-			if (error == INVALID_SOCKET) {
-				std::wstring msg = L"Failed to grab from server!";
-				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-			}
-			if ('0' <= buffer[0] && buffer[0] <= '3') {
-				int indice = 1;
-				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
-				indice = parseBufferForPosition(temp, buffer, indice);
-				indice = parseBufferForRotation(temp, buffer, indice);
-				//indice = parseBufferForOrientation(temp, buffer, indice);
-				indice = parseBufferForVelocity(temp, buffer, indice);
-			}
-		});
+			}).then([this]() {
+				char buffer[128];
+				int error = recv(s, buffer, 128, 0);
+				if (error == INVALID_SOCKET) {
+					std::wstring msg = L"Failed to grab from server!";
+					//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+					exit(0);
+				}
+				if ('0' <= buffer[0] && buffer[0] <= '3') {
+					int indice = 1;
+					GameObject* temp = allGameObjects[buffer[0] - '0'].get();
+					indice = parseBufferForPosition(temp, buffer, indice);
+					indice = parseBufferForRotation(temp, buffer, indice);
+					//indice = parseBufferForOrientation(temp, buffer, indice);
+					indice = parseBufferForVelocity(temp, buffer, indice);
+				}
+				});
 	}
 
 	//playerGameObject->GetData();
@@ -2002,7 +1993,7 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	/*
 	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f, 2.25f, 7.5f);
 	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), (objectDimensions.y / 2), 0); // Assuming bottom corner fo object
-	
+
 	auto objTankitem = std::make_unique<RenderItem>();
 	XMFLOAT4 rotationQuaternion = getRotateObjectQuaternionAroundY(orientationRadians);
 	XMVECTOR tankRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
