@@ -1772,7 +1772,7 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	// Create Physics Objects
 	float mass = 15.0f;
 	float coefficientFriction = 3.0;
-	float stepTime = 0.0f;
+	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
 	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f * scaling.x, 2.5f * scaling.y, 7.5f * scaling.z);
@@ -1815,7 +1815,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	// Create Physics Objects
 	float mass = 10000.0f;
 	float coefficientFriction = 0;
-	float stepTime = 0.0f;
+	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
 	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f * scaling.x, 3.0f * scaling.y, 5.25f * scaling.z);
@@ -1871,7 +1871,7 @@ void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 transla
 	// Create Physics Objects
 	float mass = 1.0f;
 	float coefficientFriction = 0;
-	float stepTime = 0.0f;
+	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
 	XMFLOAT3 objectDimensions = XMFLOAT3(2.0f * scaling.x, 2.0f * scaling.y, 8.0f * scaling.z);

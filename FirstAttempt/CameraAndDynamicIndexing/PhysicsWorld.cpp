@@ -90,7 +90,7 @@ void PhysicsWorld::ResolveCollisions(float dt) {
 	{
 		PhysicsObject* currentObject = objects[objectIndex];
 		BoundingBox currentObjectBoundingBox = currentObject->ObjBoundingBox();
-		for (int targetObjectIndex = 0; targetObjectIndex < objects.size(); targetObjectIndex++) {
+		for (int targetObjectIndex = objectIndex + 1; targetObjectIndex < objects.size(); targetObjectIndex++) {
 			if (objectIndex != targetObjectIndex) {
 				PhysicsObject* targetObject = objects[targetObjectIndex];
 				BoundingBox targetObjectBoundingBox = targetObject->ObjBoundingBox();
