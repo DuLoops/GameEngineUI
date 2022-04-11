@@ -21,14 +21,27 @@
 #include "PhysicsWorld.h"
 #include "GameObject.h"
 
+// Networking
+//#include <winsock2.h>
+//#include <stdio.h>
+//#include <Ws2tcpip.h>
+//#include <tchar.h>
+
+//#define _OPEN_SYS_SOCK_IPV6
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
+//#pragma warning(disable:4996)
 
 const int gNumFrameResources = 3;
+bool running = true;
+SOCKET s;
+sockaddr_in you;
+char message[2];
 
 // Lightweight structure stores parameters to draw a shape.  This will
 // vary from app-to-app.
@@ -84,6 +97,8 @@ public:
 	~CameraAndDynamicIndexingApp();
 
 	virtual bool Initialize()override;
+	int Initialize_Client();
+	int ConnectToServer();
 
 private:
 	virtual void OnResize()override;
@@ -205,9 +220,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	try
 	{
 		CameraAndDynamicIndexingApp theApp(hInstance);
-		if (!theApp.Initialize())
+		if (!theApp.Initialize()) {
 			return 0;
-
+		}
+		theApp.Initialize_Client();
+		theApp.ConnectToServer();
 		return theApp.Run();
 	}
 	catch (DxException& e)
@@ -1136,6 +1153,49 @@ void CameraAndDynamicIndexingApp::BuildObjGeometry(char* filePath, std::string g
 	geo->DrawArgs[drawArgName] = submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
+}
+
+int CameraAndDynamicIndexingApp::Initialize_Client()
+{
+	WSADATA w;
+
+	int error = WSAStartup(0x0202, &w);
+
+	if (error)
+	{
+		PostQuitMessage(0);
+		running = false;
+		return 0;
+	}
+	if (w.wVersion != 0x0202)
+	{
+		PostQuitMessage(0);
+		running = false;
+		WSACleanup();
+		return 0;
+	}
+
+	s = socket(AF_INET, SOCK_STREAM, 0); // create socket
+	return(1);
+}
+
+int CameraAndDynamicIndexingApp::ConnectToServer()
+{
+	you.sin_family = AF_INET;
+	you.sin_port = htons(5005);    // RPSS port is 5555
+	you.sin_addr.s_addr = inet_addr("96.48.99.108");
+
+	if (connect(s, (LPSOCKADDR)&you, sizeof(you)) == SOCKET_ERROR)
+	{
+		return 1;
+		running = false;
+	}
+	else { printf("connected"); }
+
+	if (connect(s, (LPSOCKADDR)&you, sizeof(you)) == 0)
+	{
+		return 1;
+	}
 }
 
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
