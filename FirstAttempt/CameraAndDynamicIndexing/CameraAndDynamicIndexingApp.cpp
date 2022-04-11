@@ -678,7 +678,8 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		if (checkOutBounds(playerGameObject->getPhysicsObject()->getPosition())) {
 			playerGameObject->getPhysicsObject()->setPoition(0.0,-10.0,0.0);
 			playerGameObject = nullptr;
-			//MessageBox(NULL, "An error has occurred!", "Title!", MB_ICONERROR | MB_OK);
+			std::wstring msg = L"Tank Died!";
+			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
 		}
 
 	}
