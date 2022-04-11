@@ -9,7 +9,7 @@ using namespace DirectX;
 class PhysicsObject
 {
 public:
-    PhysicsObject(XMFLOAT3 position, XMFLOAT3 centerPoint, XMFLOAT4 rotationQuaternion, XMFLOAT3 velocity, XMFLOAT3 force, BoundingBox objBoundingBox, float mass, float stepTime);
+    PhysicsObject(XMFLOAT3 position, XMFLOAT3 centerPoint, XMFLOAT4 rotationQuaternion, BoundingBox objBoundingBox, float mass, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
     PhysicsObject& operator=(const PhysicsObject& rhPhysicsObject);
     ~PhysicsObject();
@@ -29,6 +29,8 @@ public:
     void setVelocity(float x, float y, float z) { velocity = { x, y, z }; }
     void setForce(float x, float y, float z) { force = { x, y, z }; }
     void setMass(float newMass) { mass = newMass; }
+
+    void applyForce(float x, float y, float z) { force = { force.x + x, force.y + y, force.z + z }; }
 
     void Update(float dt);
 

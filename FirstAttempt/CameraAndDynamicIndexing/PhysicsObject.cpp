@@ -2,13 +2,13 @@
 
 using namespace DirectX;
 
-PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingCenterPoint, XMFLOAT4 startingRotationQuaternion, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
+PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingCenterPoint, XMFLOAT4 startingRotationQuaternion, BoundingBox objBoundingBox, float startingMass, float stepTime)
 {
 	position = startingPosition;
 	centerPoint = startingCenterPoint;
 	rotationQuaternion = startingRotationQuaternion;
-	velocity = startingVelocity;
-	force = startingForce;
+	velocity = XMFLOAT3{0, 0, 0};
+	force = XMFLOAT3{ 0, 0, 0 };
 	boundingBox = objBoundingBox;
 	mass = startingMass;
 	timeStep = stepTime;
@@ -35,11 +35,11 @@ void PhysicsObject::Update(float dt)
 		//XMVECTOR newRotationVector = XMLoadFloat4(&rotationQuaternion);
 
 		XMVECTOR pos = XMLoadFloat3(&position);
-		//XMVECTOR center = XMLoadFloat3(&centerPoint);
+		XMVECTOR center = XMLoadFloat3(&centerPoint);
 		XMFLOAT3 translation = XMFLOAT3(velocity.x * t, velocity.y * t, velocity.z * t);
 		XMVECTOR translationVector = XMLoadFloat3(&translation);
 		XMVECTOR newPos = pos + translationVector;
-		//XMVECTOR newCenter = center + translationVector;
+		XMVECTOR newCenter = center + translationVector;
 
 		XMStoreFloat3(&position, newPos);
 		//XMStoreFloat3(&centerPoint, newCenter);
