@@ -217,7 +217,7 @@ private:
 	std::vector<GameObject*> gameObjects;
 	GameObject* playerGameObject = nullptr;
 
-	bool firstPerson = false;
+	bool isNetworked = false;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -309,8 +309,10 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	//Initialize_Client();
-	//ConnectToServer();
+	if (isNetworked) {
+		Initialize_Client();
+		ConnectToServer();
+	}
 	return true;
 }
 
@@ -526,11 +528,11 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 
 	if ((GetAsyncKeyState('A') & 0x8000) && playerGameObject != nullptr) {
 		playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
-		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 3);
 	}
 	else if ((GetAsyncKeyState('D') & 0x8000) && playerGameObject != nullptr) {
 		playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
-		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 3);
 	}
 	else if ((GetAsyncKeyState('W') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
@@ -539,14 +541,13 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
 		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
-
 	}
 	else if ((GetAsyncKeyState('S') & 0x8000) && playerGameObject != nullptr) {
-		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-		XMFLOAT3 forwardVelocity;
-		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f);
+		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
+		XMFLOAT3 forwardForce;
+		XMStoreFloat3(&forwardForce, actualForwardVector * 700);
+		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 	else if ((GetAsyncKeyState('Q') & 0x8000) && playerGameObject != nullptr) {
@@ -558,11 +559,11 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 	else if ((GetAsyncKeyState('E') & 0x8000) && playerGameObject != nullptr) {
-		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f);
-		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
-		XMFLOAT3 forwardForce;
-		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
-		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 
@@ -651,22 +652,21 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 	}*/
 
-	if (GetAsyncKeyState('1') & 0x8000) {
+	if ((GetAsyncKeyState('1') & 0x8000) && playerGameObject != nullptr) {
 		//const XMFLOAT3 pos = mCamera.GetPosition3f();
 
 		//mCamera.SetPosition(pos.x, pos.y + 5, pos.z - 1);
-
 		mCamera.SetLens(0.35f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 
 		//set character in front of the camera 
 	}
 
-	if (GetAsyncKeyState('2') & 0x8000) {
+	if ((GetAsyncKeyState('2') & 0x8000) && playerGameObject != nullptr) {
 		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 	}
 
-	if (GetAsyncKeyState('3') & 0x8000) {
-		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	if ((GetAsyncKeyState('3') & 0x8000) && playerGameObject != nullptr) {
+		mCamera.SetLens(0.1f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 	}
 
 	if (GetAsyncKeyState('4') & 0x8000)
@@ -976,37 +976,37 @@ int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
 
 void CameraAndDynamicIndexingApp::UpdateGameLoop()
 {
-	if (playerGameObject != nullptr) {
-		if (checkOutBounds(playerGameObject->ObjectPhysicsData()->Position())) {
-			playerGameObject->ObjectPhysicsData()->setPoition(0.0, -1000.0, 0.0);
-			playerGameObject = nullptr;
-			std::wstring msg = L"Tank Died!";
-			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-		}
-
-	}
-	/*
-	else if (started == false) {
-		auto t = concurrency::create_task([this]() {
-			char buffer[1];
-			int error = recv(s, buffer, 1, 0);
-			if (error == INVALID_SOCKET) {
-				std::wstring msg = L"Server connection failed!";
-				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-				exit(1);
+	if (isNetworked) {
+		if (playerGameObject != nullptr) {
+			if (checkOutBounds(playerGameObject->ObjectPhysicsData()->Position())) {
+				playerGameObject->ObjectPhysicsData()->setPoition(0.0, -1000.0, 0.0);
+				playerGameObject = nullptr;
+				std::wstring msg = L"Tank Died!";
+				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
 			}
-			int ibuffer = buffer[0] - 1;
-			return ibuffer;
-			}).then([this](int result) {
-				if (0 <= result && result <= 3) {
-					started = true;
-					index = result;
-					playerGameObject = allGameObjects[result].get();
+
+		}
+		else if (started == false) {
+			auto t = concurrency::create_task([this]() {
+				char buffer[1];
+				int error = recv(s, buffer, 1, 0);
+				if (error == INVALID_SOCKET) {
+					std::wstring msg = L"Server connection failed!";
+					//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+					exit(1);
 				}
-				});
-	}
-	if (started == true) {
-		auto t = concurrency::create_task([this]() {
+				int ibuffer = buffer[0] - 1;
+				return ibuffer;
+				}).then([this](int result) {
+					if (0 <= result && result <= 3) {
+						started = true;
+						index = result;
+						playerGameObject = allGameObjects[result].get();
+					}
+					});
+		}
+		if (started == true) {
+			auto t = concurrency::create_task([this]() {
 			char buffer[128];
 			int length = 0;
 			length += sprintf_s(buffer, 128, "%d", index);
@@ -1024,25 +1024,36 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			if (57 <= length && length <= 127) {
 				send(s, buffer, 128, 0);
 			}
-		}).then([this]() {
-			char buffer[128];
-			int error = recv(s, buffer, 128, 0);
-			if (error == INVALID_SOCKET) {
-				std::wstring msg = L"Failed to grab from server!";
-				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-				exit(0);
-			}
-			if ('0' <= buffer[0] && buffer[0] <= '3') {
-				int indice = 1;
-				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
-				indice = parseBufferForPosition(temp, buffer, indice);
-				//indice = parseBufferForRotation(temp, buffer, indice);
-				indice = parseBufferForOrientation(temp, buffer, indice);
-				indice = parseBufferForVelocity(temp, buffer, indice);
-			}
-		});
+			}).then([this]() {
+				char buffer[128];
+				int error = recv(s, buffer, 128, 0);
+				if (error == INVALID_SOCKET) {
+					std::wstring msg = L"Failed to grab from server!";
+					//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+					exit(0);
+				}
+				if ('0' <= buffer[0] && buffer[0] <= '3') {
+					int indice = 1;
+					GameObject* temp = allGameObjects[buffer[0] - '0'].get();
+					indice = parseBufferForPosition(temp, buffer, indice);
+					//indice = parseBufferForRotation(temp, buffer, indice);
+					indice = parseBufferForOrientation(temp, buffer, indice);
+					indice = parseBufferForVelocity(temp, buffer, indice);
+				}
+			});
+		}
 	}
-	*/
+	else {
+		if (playerGameObject != nullptr) {
+			if (checkOutBounds(playerGameObject->ObjectPhysicsData()->Position())) {
+				playerGameObject->ObjectPhysicsData()->setPoition(0.0, -1000.0, 0.0);
+				playerGameObject = nullptr;
+				std::wstring msg = L"Tank Died!";
+				MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+			}
+
+		}
+	}
 }
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
