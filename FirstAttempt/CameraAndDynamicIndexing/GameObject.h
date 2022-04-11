@@ -16,8 +16,8 @@ public:
     void ChangeOrientationRadians(float deltaRadians);
     PhysicsObject* ObjectPhysicsData() { return objectPhysicsData; }
 
-    void UpdateGameObject(float objectOrientationRadians, float xPosition, float yPosition);
-    void GetData();
+    //void UpdateGameObject(float objectOrientationRadians, float xPosition, float yPosition);
+    //void GetData();
     /*
     GameObject(PhysicsObject* physicsData, int startHealth, bool isPlayerObject = false);
     GameObject(const GameObject& rhs) = delete;

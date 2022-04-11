@@ -552,9 +552,17 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mCamera.Roll(1.0f * dt);
 	}
 
-
-	if (GetAsyncKeyState('8') & 0x8000) {
+	if (GetAsyncKeyState('5') & 0x8000) {
 		playerGameObject = allGameObjects[0].get();
+	}
+	if (GetAsyncKeyState('6') & 0x8000) {
+		playerGameObject = allGameObjects[1].get();
+	}
+	if (GetAsyncKeyState('7') & 0x8000) {
+		playerGameObject = allGameObjects[2].get();
+	}
+	if (GetAsyncKeyState('8') & 0x8000) {
+		playerGameObject = allGameObjects[3].get();
 	}
 	if (GetAsyncKeyState('9') & 0x8000) {
 		playerGameObject = nullptr;
@@ -1753,9 +1761,24 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	float y2 = GetHillsHeight(x1, z1);
 
 	XMFLOAT3 tankScaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
-	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, -1.0f, 1.0f);
-	float tankOrientationRadians = 0.5 * pi;
+	XMFLOAT3 tankTranslation = XMFLOAT3(0.0f, -1.0f, 35.0f);
+	float tankOrientationRadians = 0.0f;
 	BuildTank(tankScaling, tankTranslation, tankOrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank2Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank2Translation = XMFLOAT3(35.0f, -1.0f, 0.0f);
+	float tank2OrientationRadians = 0.5 * pi;
+	BuildTank(tank2Scaling, tank2Translation, tank2OrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank3Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank3Translation = XMFLOAT3(0.0f, -1.0f, -35.0f);
+	float tank3OrientationRadians = pi;
+	BuildTank(tank3Scaling, tank3Translation, tank3OrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank4Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank4Translation = XMFLOAT3(-35.0f, -1.0f, 0.0f);
+	float tank4OrientationRadians = 1.5 * pi;
+	BuildTank(tank4Scaling, tank4Translation, tank4OrientationRadians, objCBIndex);
 
 	XMFLOAT3 houseScaling = XMFLOAT3(14.0f, 14.0f, 14.0f);
 	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 0.0f, 0.0f);
@@ -1766,11 +1789,6 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	XMFLOAT3 treeTranslation = XMFLOAT3(-100.0f, 0.0f, 0.0f);
 	float treeOrientationRadians = 0.0f;
 	BuildTree(treeScaling, treeTranslation, treeOrientationRadians, objCBIndex);
-
-	XMFLOAT3 tank2Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
-	XMFLOAT3 tank2Translation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	float tank2OrientationRadians = 0.0f;
-	BuildTank(tank2Scaling, tank2Translation, tank2OrientationRadians, objCBIndex);
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
@@ -1819,7 +1837,7 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	/*mAllRitems.push_back(std::move(boxRitem));*/
 
 	XMFLOAT3 bulletScaling = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	XMFLOAT3 bulletTranslation = XMFLOAT3(5.0f, 7.0f, -200.0f);
+	XMFLOAT3 bulletTranslation = XMFLOAT3(5.0f, 20.0f, -200.0f);
 	//XMFLOAT3 bulletTranslation = XMFLOAT3(0.0f, 5.0f, 0.0f);
 	float bulletOrientationRadians = pi;
 	BuildBullet(bulletScaling, bulletTranslation, bulletOrientationRadians, objCBIndex);
