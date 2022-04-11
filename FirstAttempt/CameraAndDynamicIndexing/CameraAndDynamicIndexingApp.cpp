@@ -517,12 +517,15 @@ void CameraAndDynamicIndexingApp::OnMouseMove(WPARAM btnState, int x, int y)
 void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
+	float defaultCoefficientFriction = 3.0;
 
 	if ((GetAsyncKeyState('A') & 0x8000) && playerGameObject != nullptr) {
 		playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
 	}
 	else if ((GetAsyncKeyState('D') & 0x8000) && playerGameObject != nullptr) {
 		playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
 	}
 	else if ((GetAsyncKeyState('W') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
@@ -530,6 +533,7 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		XMFLOAT3 forwardVelocity;
 		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
 		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 	else if ((GetAsyncKeyState('S') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
@@ -537,21 +541,23 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		XMFLOAT3 forwardVelocity;
 		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
 		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
-
-	if ((GetAsyncKeyState('Q') & 0x8000) && playerGameObject != nullptr) {
+	else if ((GetAsyncKeyState('Q') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
 		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
 		XMFLOAT3 forwardForce;
 		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
 		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
-	if ((GetAsyncKeyState('E') & 0x8000) && playerGameObject != nullptr) {
+	else if ((GetAsyncKeyState('E') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f);
 		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
 		XMFLOAT3 forwardForce;
 		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
 		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000) {
@@ -1814,7 +1820,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 
 	// Create Physics Objects
 	float mass = 10000.0f;
-	float coefficientFriction = 0;
+	float coefficientFriction = 100;
 	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
