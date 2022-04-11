@@ -28,6 +28,8 @@ public:
     const void TakeDamage(int damage) { health -= damage; };
     const bool IsDestroyed()const { return health <= 0; };
     */
+
+    PhysicsObject* getPhysicsObject() { return objectPhysicsData; }
 private:
     float objectOrientationRadians;
     PhysicsObject* objectPhysicsData;

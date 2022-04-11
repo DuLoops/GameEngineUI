@@ -25,6 +25,7 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
+
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 
@@ -672,12 +673,6 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 	}
 }
 
-void CameraAndDynamicIndexingApp::UpdateGameLoop()
-{
-	
-	//playerGameObject = nullptr;
-}
-
 bool checkOutBounds(XMFLOAT3 gameObjectPos) {
 
 	if (gameObjectPos.x > 260.0f || gameObjectPos.x < -260.0f || gameObjectPos.z > 260.0f || gameObjectPos.z < -260.0f) {
@@ -686,6 +681,21 @@ bool checkOutBounds(XMFLOAT3 gameObjectPos) {
 	}
 	return false;
 }
+
+void CameraAndDynamicIndexingApp::UpdateGameLoop()
+{
+	if (playerGameObject != nullptr) {
+		if (checkOutBounds(playerGameObject->getPhysicsObject()->getPosition())) {
+			playerGameObject->getPhysicsObject()->setPoition(0.0,-10.0,0.0);
+			playerGameObject = nullptr;
+			//MessageBox(NULL, "An error has occurred!", "Title!", MB_ICONERROR | MB_OK);
+		}
+
+	}
+
+}
+
+
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
 {

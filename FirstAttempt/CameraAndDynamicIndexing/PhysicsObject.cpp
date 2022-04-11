@@ -142,5 +142,5 @@ void PhysicsObject::setPoition(float x, float y, float z) {
 
 XMFLOAT3 PhysicsObject::getPosition()
 {
-	return XMFLOAT3{ 1, 2,3 };
+	return position;
 }
