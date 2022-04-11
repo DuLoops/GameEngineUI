@@ -531,12 +531,13 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
 	}
 	else if ((GetAsyncKeyState('W') & 0x8000) && playerGameObject != nullptr) {
-		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
-		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-		XMFLOAT3 forwardVelocity;
-		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
+		XMFLOAT3 forwardForce;
+		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
+		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
+
 	}
 	else if ((GetAsyncKeyState('S') & 0x8000) && playerGameObject != nullptr) {
 		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
@@ -547,11 +548,11 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 	else if ((GetAsyncKeyState('Q') & 0x8000) && playerGameObject != nullptr) {
-		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
-		XMFLOAT3 forwardForce;
-		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
-		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
 		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
 	}
 	else if ((GetAsyncKeyState('E') & 0x8000) && playerGameObject != nullptr) {
@@ -633,19 +634,6 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 
 	}
 
-	if (GetAsyncKeyState('2') & 0x8000) {
-		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
-	}
-	if (GetAsyncKeyState('1') & 0x8000) {
-		//const XMFLOAT3 pos = mCamera.GetPosition3f();
-
-		//mCamera.SetPosition(pos.x, pos.y + 5, pos.z - 1);
-
-		mCamera.SetLens(0.35f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
-
-		//set character in front of the camera 
-	}
-
 	/*if (GetAsyncKeyState('1') & 0x8000)
 		mMainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.8f };
 		mMainPassCB.Lights[1].Strength = { 0.0f, 0.0f, 0.0f };
@@ -661,7 +649,25 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 	}*/
 
-	if (GetAsyncKeyState('3') & 0x8000)
+	if (GetAsyncKeyState('1') & 0x8000) {
+		//const XMFLOAT3 pos = mCamera.GetPosition3f();
+
+		//mCamera.SetPosition(pos.x, pos.y + 5, pos.z - 1);
+
+		mCamera.SetLens(0.35f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+
+		//set character in front of the camera 
+	}
+
+	if (GetAsyncKeyState('2') & 0x8000) {
+		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	}
+
+	if (GetAsyncKeyState('3') & 0x8000) {
+		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	}
+
+	if (GetAsyncKeyState('4') & 0x8000)
 		mIsWireframe = true;
 	else
 		mIsWireframe = false;
@@ -1035,16 +1041,6 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		});
 	}
 	*/
-
-	//playerGameObject->GetData();
-	// Send to server
-
-	// Get data from server  ...
-	// create array of data for game game objects
-	//for (GameObject* gameObject : gameObjects) {
-	//	gameObject->UpdateGameObject(...);
-	//}
-
 }
 
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
@@ -1557,7 +1553,7 @@ int CameraAndDynamicIndexingApp::ConnectToServer()
 	char serverArr[126];
 	//char* bufferArr = serverArr;
 
-	send(s, buffer, 14, 0);
+	//send(s, buffer, 14, 0);
 	recv(s, serverArr, 126, 0);
 }
 
