@@ -30,10 +30,11 @@ void PhysicsObject::Update(float dt)
 	{
 		float objectScale = 1.0f;
 
-		float rotationAngle = 0.0f;
-		XMVECTOR rotationVector = XMQuaternionRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), rotationAngle);
-		//XMVECTOR newRotationVector = XMLoadFloat4(&rotationQuaternion);
-
+		//float rotationAngle = 0.0f;
+		//XMVECTOR rotationVector = XMQuaternionRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), rotationAngle);
+		
+		XMVECTOR rotationVector = XMVectorSet(0, 0, 0, 1.0f);
+		///XMVECTOR newRotationVector = XMLoadFloat4(&rotationQuaternion);
 		XMVECTOR pos = XMLoadFloat3(&position);
 		XMVECTOR center = XMLoadFloat3(&centerPoint);
 		XMFLOAT3 translation = XMFLOAT3(velocity.x * t, velocity.y * t, velocity.z * t);
@@ -42,9 +43,12 @@ void PhysicsObject::Update(float dt)
 		XMVECTOR newCenter = center + translationVector;
 
 		XMStoreFloat3(&position, newPos);
-		//XMStoreFloat3(&centerPoint, newCenter);
+		XMStoreFloat3(&centerPoint, newCenter);
 		boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
-		//boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
+		//boundingBox.Transform(boundingBox, objectScale, newRotationVector, translationVector);
+
+		//
+		//boundingBox.Transform(boundingBox, objectScale, newRotationVector, XMVectorSet(0, 0, 0, 1.0f));
 
 		/*
 		XMVECTOR rotationVector = XMLoadFloat4(&rotationQuaternion);
