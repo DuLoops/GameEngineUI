@@ -629,12 +629,11 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	/// <param name="gt"></param>
 	if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
 		//generateBullet(UINT& objCBIndex);
-		//std::wstring soundPath = L"./Sounds/explo1";
-		//LPCWSTR bullet = soundPath.c_str();
-		//sndPlaySound(bullet, SND_FILENAME);
+		std::wstring soundPath = L"./Sounds/explo1";
+		LPCWSTR bullet = soundPath.c_str();
+		sndPlaySound(bullet, SND_FILENAME | SND_ASYNC);
 
 		//generateBullet();
-
 	}
 
 	/*if (GetAsyncKeyState('1') & 0x8000)
