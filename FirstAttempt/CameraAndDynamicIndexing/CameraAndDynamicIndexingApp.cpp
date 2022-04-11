@@ -211,9 +211,9 @@ private:
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
 {
-	std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
-	LPCWSTR backgroundMusic = soundPath.c_str();
-	sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
+	//std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
+	//LPCWSTR backgroundMusic = soundPath.c_str();
+	//sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
 
 #if defined(DEBUG) | defined(_DEBUG)
@@ -297,8 +297,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	Initialize_Client();
-	ConnectToServer();
+	//Initialize_Client();
+	//ConnectToServer();
 	return true;
 }
 
@@ -597,7 +597,7 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		LPCWSTR bullet = soundPath.c_str();
 		sndPlaySound(bullet, SND_FILENAME);
 
-		generateBullet();
+		//generateBullet();
 	}
 
 	if (GetAsyncKeyState('2') & 0x8000) {
