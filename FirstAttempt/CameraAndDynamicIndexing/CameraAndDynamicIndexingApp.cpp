@@ -1707,7 +1707,7 @@ void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 transla
 void CameraAndDynamicIndexingApp::generateBullet() {
 	UINT objCBIndex = mAllRitems.size();
 	XMFLOAT3 bulletScaling = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	XMFLOAT3 bulletTranslation = XMFLOAT3(20.0f, 20.0f, 10.0f);
+	XMFLOAT3 bulletTranslation = XMFLOAT3(0.0f, 20.0f,0.0f);
 	float bulletOrientationRadians = 0.0f;
 	BuildBullet(bulletScaling, bulletTranslation, bulletOrientationRadians, objCBIndex);
 }
