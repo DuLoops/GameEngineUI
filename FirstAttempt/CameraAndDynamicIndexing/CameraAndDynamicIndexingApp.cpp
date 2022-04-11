@@ -216,6 +216,8 @@ private:
 	std::vector<std::unique_ptr<GameObject>> allGameObjects;
 	std::vector<GameObject*> gameObjects;
 	GameObject* playerGameObject = nullptr;
+
+	bool firstPerson = false;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
