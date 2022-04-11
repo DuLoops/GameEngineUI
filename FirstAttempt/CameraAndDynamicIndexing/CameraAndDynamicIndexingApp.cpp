@@ -12,6 +12,7 @@
 #include <random>
 // Iostream - STD I/O Library
 #include <iostream>
+#include <string>
 #include <fstream>
 
 // All physics calculations taking place here
@@ -21,15 +22,33 @@
 #include "PhysicsWorld.h"
 #include "GameObject.h"
 
+// Networking
+//#include <winsock2.h>
+//#include <stdio.h>
+//#include <Ws2tcpip.h>
+//#include <tchar.h>
+
+//#define _OPEN_SYS_SOCK_IPV6
+
+//Loading sound
+#include <Mmsystem.h>
+#include <mciapi.h>
+//these two headers are already included in the <Windows.h> header
+#pragma comment(lib, "Winmm.lib")
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
-
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
+//#pragma warning(disable:4996)
 
 const int gNumFrameResources = 3;
+bool running = true;
+SOCKET s;
+sockaddr_in you;
+char message[2];
 
 // Lightweight structure stores parameters to draw a shape.  This will
 // vary from app-to-app.
@@ -85,6 +104,8 @@ public:
 	~CameraAndDynamicIndexingApp();
 
 	virtual bool Initialize()override;
+	int Initialize_Client();
+	int ConnectToServer();
 
 private:
 	virtual void OnResize()override;
@@ -172,7 +193,6 @@ private:
 	/*XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
 	float mTheta = 1.5f * XM_PI;
 	float mPhi = XM_PIDIV2 - 0.1f;
 	float mRadius = 50.0f;*/
@@ -199,6 +219,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
 {
 	// Enable run-time memory check for debug builds.
+	//std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
+	//LPCWSTR backgroundMusic = soundPath.c_str();
+	//sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
+
+
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
@@ -206,9 +231,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	try
 	{
 		CameraAndDynamicIndexingApp theApp(hInstance);
-		if (!theApp.Initialize())
+		if (!theApp.Initialize()) {
 			return 0;
-
+		}
 		return theApp.Run();
 	}
 	catch (DxException& e)
@@ -279,6 +304,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
+	//Initialize_Client();
+	//ConnectToServer();
 	return true;
 }
 
@@ -574,6 +601,10 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	/// <param name="gt"></param>
 	if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
 		//generateBullet(UINT& objCBIndex);
+		//std::wstring soundPath = L"./Sounds/explo1";
+		//LPCWSTR bullet = soundPath.c_str();
+		//sndPlaySound(bullet, SND_FILENAME);
+
 		//generateBullet();
 
 	}
@@ -1174,6 +1205,59 @@ void CameraAndDynamicIndexingApp::BuildObjGeometry(char* filePath, std::string g
 	geo->DrawArgs[drawArgName] = submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
+}
+
+int CameraAndDynamicIndexingApp::Initialize_Client()
+{
+	WSADATA w;
+
+	int error = WSAStartup(0x0202, &w);
+
+	if (error)
+	{
+		PostQuitMessage(0);
+		running = false;
+		return 0;
+	}
+	if (w.wVersion != 0x0202)
+	{
+		PostQuitMessage(0);
+		running = false;
+		WSACleanup();
+		return 0;
+	}
+
+	s = socket(AF_INET, SOCK_STREAM, 0); // create socket
+	return(1);
+}
+
+int CameraAndDynamicIndexingApp::ConnectToServer()
+{
+	you.sin_family = AF_INET;
+	you.sin_port = htons(5005);    // RPSS port is 5555
+	you.sin_addr.s_addr = inet_addr("96.48.99.108");
+
+	if (connect(s, (LPSOCKADDR)&you, sizeof(you)) == SOCKET_ERROR)
+	{
+		return 1;
+		running = false;
+	}
+	else { printf("connected"); }
+
+	char arr[] = "This is a test";
+	char* buffer = arr;
+	char serverArr[126];
+	//char* bufferArr = serverArr;
+
+	send(s, buffer, 14, 0);
+	recv(s, serverArr, 126, 0);
+	recv(s, serverArr, 126, 0);
+
+	wchar_t wtext[126];
+	mbstowcs(wtext, serverArr, strlen(serverArr) + 1);
+	LPWSTR ptr = wtext;
+
+	MessageBox(0, ptr, 0, 0);
 }
 
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
