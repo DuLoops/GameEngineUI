@@ -307,8 +307,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
-	Initialize_Client();
-	ConnectToServer();
+	//Initialize_Client();
+	//ConnectToServer();
 	return true;
 }
 
@@ -977,6 +977,7 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 		}
 
 	}
+	/*
 	else if (started == false) {
 		auto t = concurrency::create_task([this]() {
 			char buffer[1];
@@ -1033,6 +1034,7 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			}
 		});
 	}
+	*/
 
 	//playerGameObject->GetData();
 	// Send to server
