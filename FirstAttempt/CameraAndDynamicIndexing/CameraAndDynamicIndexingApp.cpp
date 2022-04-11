@@ -21,6 +21,13 @@
 #include "PhysicsWorld.h"
 #include "GameObject.h"
 
+//Loading sound
+#include <Mmsystem.h>
+#include <mciapi.h>
+//these two headers are already included in the <Windows.h> header
+#pragma comment(lib, "Winmm.lib")
+
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -62,6 +69,7 @@ struct RenderItem
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
+
 };
 
 enum class RenderLayer : int
@@ -162,7 +170,7 @@ private:
 
 	std::unique_ptr<Waves> mWaves;
 
-
+	
 
 	PassConstants mMainPassCB;
 
@@ -194,7 +202,11 @@ private:
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
 {
-	// Enable run-time memory check for debug builds.
+	std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
+	LPCWSTR backgroundMusic = soundPath.c_str();
+	sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
+
+
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
@@ -243,6 +255,7 @@ bool CameraAndDynamicIndexingApp::Initialize()
 		L"explo1.wav");
 	m_ambient = std::make_unique<SoundEffect>(m_audEngine.get(),
 		L"NightAmbienceSimple_02.wav");*/
+
 
 	LoadTextures();
 	BuildRootSignature();
@@ -564,6 +577,10 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	/// <param name="gt"></param>
 	if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
 		//generateBullet(UINT& objCBIndex);
+		std::wstring soundPath = L"./Sounds/explo1";
+		LPCWSTR bullet = soundPath.c_str();
+		sndPlaySound(bullet, SND_FILENAME);
+
 		generateBullet();
 	}
 
