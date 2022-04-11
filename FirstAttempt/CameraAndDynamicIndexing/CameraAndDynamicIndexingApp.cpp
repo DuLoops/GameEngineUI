@@ -609,15 +609,19 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('5') & 0x8000) {
 		playerGameObject = allGameObjects[0].get();
+		index = 0;
 	}
 	if (GetAsyncKeyState('6') & 0x8000) {
 		playerGameObject = allGameObjects[1].get();
+		index = 1;
 	}
 	if (GetAsyncKeyState('7') & 0x8000) {
 		playerGameObject = allGameObjects[2].get();
+		index = 2;
 	}
 	if (GetAsyncKeyState('8') & 0x8000) {
 		playerGameObject = allGameObjects[3].get();
+		index = 3;
 	}
 	if (GetAsyncKeyState('9') & 0x8000) {
 		playerGameObject = nullptr;
@@ -651,7 +655,7 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 	}*/
 
-	if ((GetAsyncKeyState('1') & 0x8000) && playerGameObject != nullptr) {
+	if ((GetAsyncKeyState('1') & 0x8000)) {
 		//const XMFLOAT3 pos = mCamera.GetPosition3f();
 
 		//mCamera.SetPosition(pos.x, pos.y + 5, pos.z - 1);
@@ -660,11 +664,11 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		//set character in front of the camera 
 	}
 
-	if ((GetAsyncKeyState('2') & 0x8000) && playerGameObject != nullptr) {
+	if ((GetAsyncKeyState('2') & 0x8000)) {
 		mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 	}
 
-	if ((GetAsyncKeyState('3') & 0x8000) && playerGameObject != nullptr) {
+	if ((GetAsyncKeyState('3') & 0x8000)) {
 		mCamera.SetLens(0.1f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 	}
 
