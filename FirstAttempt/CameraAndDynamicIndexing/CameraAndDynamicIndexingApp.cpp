@@ -672,16 +672,28 @@ bool checkOutBounds(XMFLOAT3 gameObjectPos) {
 	return false;
 }
 
+// At init 
+// Server send each client an integer for the index of teh game obejcts array taht is their player tank
+
 void CameraAndDynamicIndexingApp::UpdateGameLoop()
 {
 	if (playerGameObject != nullptr) {
-		if (checkOutBounds(playerGameObject->getPhysicsObject()->getPosition())) {
-			playerGameObject->getPhysicsObject()->setPoition(0.0,-10.0,0.0);
+		if (checkOutBounds(playerGameObject->ObjectPhysicsData()->Position())) {
+			playerGameObject->ObjectPhysicsData()->setPoition(0.0,-1000.0,0.0);
 			playerGameObject = nullptr;
 			//MessageBox(NULL, "An error has occurred!", "Title!", MB_ICONERROR | MB_OK);
 		}
 
 	}
+
+	//playerGameObject->GetData();
+	// Send to server
+
+	// Get data from server  ...
+	// create array of data for game game objects
+	//for (GameObject* gameObject : gameObjects) {
+	//	gameObject->UpdateGameObject(...);
+	//}
 
 }
 
@@ -1743,9 +1755,6 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, -1.0f, 1.0f);
 	float tankOrientationRadians = 0.5 * pi;
 	BuildTank(tankScaling, tankTranslation, tankOrientationRadians, objCBIndex);
-
-	// This object is player object
-	playerGameObject = allGameObjects[objCBIndex - 1].get();
 
 	XMFLOAT3 houseScaling = XMFLOAT3(14.0f, 14.0f, 14.0f);
 	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 0.0f, 0.0f);

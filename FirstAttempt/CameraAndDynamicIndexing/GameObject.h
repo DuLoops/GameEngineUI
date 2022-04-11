@@ -15,6 +15,9 @@ public:
     float OrientationRadians()const { return objectOrientationRadians; }
     void ChangeOrientationRadians(float deltaRadians);
     PhysicsObject* ObjectPhysicsData() { return objectPhysicsData; }
+
+    void UpdateGameObject(float objectOrientationRadians, float xPosition, float yPosition);
+    void GetData();
     /*
     GameObject(PhysicsObject* physicsData, int startHealth, bool isPlayerObject = false);
     GameObject(const GameObject& rhs) = delete;
@@ -28,8 +31,6 @@ public:
     const void TakeDamage(int damage) { health -= damage; };
     const bool IsDestroyed()const { return health <= 0; };
     */
-
-    PhysicsObject* getPhysicsObject() { return objectPhysicsData; }
 private:
     float objectOrientationRadians;
     PhysicsObject* objectPhysicsData;
