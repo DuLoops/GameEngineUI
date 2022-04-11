@@ -12,7 +12,9 @@
 #include <random>
 // Iostream - STD I/O Library
 #include <iostream>
+#include <string>
 #include <fstream>
+#include <ppltasks.h>
 
 // All physics calculations taking place here
 #include "PhysicsWorld.h"
@@ -21,12 +23,19 @@
 #include "PhysicsWorld.h"
 #include "GameObject.h"
 
+// Networking
+//#include <winsock2.h>
+//#include <stdio.h>
+//#include <Ws2tcpip.h>
+//#include <tchar.h>
+
+//#define _OPEN_SYS_SOCK_IPV6
+
 //Loading sound
 #include <Mmsystem.h>
 #include <mciapi.h>
 //these two headers are already included in the <Windows.h> header
 #pragma comment(lib, "Winmm.lib")
-
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -34,8 +43,15 @@ using namespace DirectX::PackedVector;
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
+//#pragma warning(disable:4996)
 
 const int gNumFrameResources = 3;
+bool running = true;
+bool started = false;
+int index;
+SOCKET s;
+sockaddr_in you;
+char message[2];
 
 // Lightweight structure stores parameters to draw a shape.  This will
 // vary from app-to-app.
@@ -70,6 +86,7 @@ struct RenderItem
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
 
+	PhysicsObject* physics = nullptr;
 };
 
 enum class RenderLayer : int
@@ -90,6 +107,8 @@ public:
 	~CameraAndDynamicIndexingApp();
 
 	virtual bool Initialize()override;
+	int Initialize_Client();
+	int ConnectToServer();
 
 private:
 	virtual void OnResize()override;
@@ -170,7 +189,7 @@ private:
 
 	std::unique_ptr<Waves> mWaves;
 
-	
+
 
 	PassConstants mMainPassCB;
 
@@ -202,9 +221,10 @@ private:
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
 {
-	std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
-	LPCWSTR backgroundMusic = soundPath.c_str();
-	sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
+	// Enable run-time memory check for debug builds.
+	//std::wstring soundPath = L"./Sounds/NightAmbienceSimple_02";
+	//LPCWSTR backgroundMusic = soundPath.c_str();
+	//sndPlaySound(backgroundMusic, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
 
 #if defined(DEBUG) | defined(_DEBUG)
@@ -214,9 +234,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	try
 	{
 		CameraAndDynamicIndexingApp theApp(hInstance);
-		if (!theApp.Initialize())
+		if (!theApp.Initialize()) {
 			return 0;
-
+		}
 		return theApp.Run();
 	}
 	catch (DxException& e)
@@ -256,7 +276,6 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_ambient = std::make_unique<SoundEffect>(m_audEngine.get(),
 		L"NightAmbienceSimple_02.wav");*/
 
-
 	LoadTextures();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
@@ -288,6 +307,8 @@ bool CameraAndDynamicIndexingApp::Initialize()
 	m_random = std::make_unique<std::mt19937>(rd());
 
 	explodeDelay = 2.f;
+	Initialize_Client();
+	ConnectToServer();
 	return true;
 }
 
@@ -333,6 +354,7 @@ void CameraAndDynamicIndexingApp::Update(const GameTimer& gt)
 	if (explodeDelay < 0.f)
 	{
 		m_explode->Play();
+
 		std::uniform_real_distribution<float> dist(1.f, 10.f);
 		explodeDelay = dist(*m_random);
 	}*/
@@ -498,59 +520,77 @@ void CameraAndDynamicIndexingApp::OnMouseMove(WPARAM btnState, int x, int y)
 void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
+	float defaultCoefficientFriction = 3.0;
 
+	if ((GetAsyncKeyState('A') & 0x8000) && playerGameObject != nullptr) {
+		playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
+	}
+	else if ((GetAsyncKeyState('D') & 0x8000) && playerGameObject != nullptr) {
+		playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction * 2);
+	}
+	else if ((GetAsyncKeyState('W') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
+	}
+	else if ((GetAsyncKeyState('S') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+		XMFLOAT3 forwardVelocity;
+		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
+	}
+	else if ((GetAsyncKeyState('Q') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
+		XMFLOAT3 forwardForce;
+		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
+		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
+	}
+	else if ((GetAsyncKeyState('E') & 0x8000) && playerGameObject != nullptr) {
+		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f);
+		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
+		XMFLOAT3 forwardForce;
+		XMStoreFloat3(&forwardForce, actualForwardVector * 1000);
+		playerGameObject->ObjectPhysicsData()->applyForce(forwardForce.x, forwardForce.y, forwardForce.z);
+		playerGameObject->ObjectPhysicsData()->setCoefficientFriction(defaultCoefficientFriction);
+	}
+
+	if (GetAsyncKeyState('A') & 0x8000) {
+		mCamera.Strafe(-100.0f * dt);
+	}
+	if (GetAsyncKeyState('D') & 0x8000) {
+		mCamera.Strafe(100.0f * dt);
+	}
 	if (GetAsyncKeyState('W') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
-			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-			XMFLOAT3 forwardVelocity;
-			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-
-		}
-
 		mCamera.Walk(100.0f * dt);
+	}
+	if (GetAsyncKeyState('S') & 0x8000) {
+		mCamera.Walk(-100.0f * dt);
 	}
 
 	if (GetAsyncKeyState(VK_UP) & 0x8000) {
 		mCamera.Pitch(-1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('S') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-			XMFLOAT3 forwardVelocity;
-			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-		}
-
-		mCamera.Walk(-100.0f * dt);
-	}
-
 	if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
 		mCamera.Pitch(1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('A') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
-		}
 
-		mCamera.Strafe(-100.0f * dt);
-	}
 
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
 		mCamera.RotateY(-1.0f * dt);
 	}
 
-	if (GetAsyncKeyState('D') & 0x8000) {
-		if (playerGameObject != nullptr) {
-			playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
-		}
 
-		mCamera.Strafe(100.0f * dt);
-	}
 
 	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
 		mCamera.RotateY(1.0f * dt);
@@ -563,9 +603,17 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 		mCamera.Roll(1.0f * dt);
 	}
 
-
-	if (GetAsyncKeyState('8') & 0x8000) {
+	if (GetAsyncKeyState('5') & 0x8000) {
 		playerGameObject = allGameObjects[0].get();
+	}
+	if (GetAsyncKeyState('6') & 0x8000) {
+		playerGameObject = allGameObjects[1].get();
+	}
+	if (GetAsyncKeyState('7') & 0x8000) {
+		playerGameObject = allGameObjects[2].get();
+	}
+	if (GetAsyncKeyState('8') & 0x8000) {
+		playerGameObject = allGameObjects[3].get();
 	}
 	if (GetAsyncKeyState('9') & 0x8000) {
 		playerGameObject = nullptr;
@@ -577,11 +625,12 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	/// <param name="gt"></param>
 	if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
 		//generateBullet(UINT& objCBIndex);
-		std::wstring soundPath = L"./Sounds/explo1";
-		LPCWSTR bullet = soundPath.c_str();
-		sndPlaySound(bullet, SND_FILENAME);
+		//std::wstring soundPath = L"./Sounds/explo1";
+		//LPCWSTR bullet = soundPath.c_str();
+		//sndPlaySound(bullet, SND_FILENAME);
 
-		generateBullet();
+		//generateBullet();
+
 	}
 
 	if (GetAsyncKeyState('2') & 0x8000) {
@@ -626,6 +675,7 @@ void CameraAndDynamicIndexingApp::UpdateCamera(const GameTimer& gt)
 	if (playerGameObject != nullptr) {
 		// Build the view matrix.
 		XMVECTOR pos = XMVectorSet(playerGameObject->ObjectPhysicsData()->Position().x, playerGameObject->ObjectPhysicsData()->Position().y, playerGameObject->ObjectPhysicsData()->Position().z, 1.0f);
+		//XMVECTOR pos = XMVectorSet(playerGameObject->ObjectPhysicsData()->CenterPoint().x, playerGameObject->ObjectPhysicsData()->CenterPoint().y, playerGameObject->ObjectPhysicsData()->CenterPoint().z, 1.0f);
 
 		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
 		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
@@ -648,8 +698,8 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 
 	for (auto& e : mAllRitems)
 	{
-		if (e->ObjCBIndex < allPhysicsObjects.size()) {
-			auto& currentPhysicsObject = allPhysicsObjects[e->ObjCBIndex];
+		if (e->physics != nullptr) {
+			auto& currentPhysicsObject = e->physics;
 
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&e->World);
 			XMVECTOR scaleVector = XMVectorZero();
@@ -663,8 +713,8 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 			rotationVector = XMVectorSet(currentPhysicsObject->RotationQuaternion().x, currentPhysicsObject->RotationQuaternion().y, currentPhysicsObject->RotationQuaternion().z, currentPhysicsObject->RotationQuaternion().w);
 
 			// Don't let object move below ground plane.
-			float adjustedY = MathHelper::Max(XMVectorGetY(translationVector), 0.0f);
-			translationVector = XMVectorSetY(translationVector, adjustedY);
+			//float adjustedY = MathHelper::Max(XMVectorGetY(translationVector), 0.0f);
+			//translationVector = XMVectorSetY(translationVector, adjustedY);
 
 			// Create new world matrix for moving object
 			XMMATRIX newWorldMatrix = XMMatrixAffineTransformation(scaleVector, rotationOriginPoint, rotationVector, translationVector);
@@ -675,8 +725,323 @@ void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
 	}
 }
 
+bool checkOutBounds(XMFLOAT3 gameObjectPos) {
+
+	if (gameObjectPos.x > 260.0f || gameObjectPos.x < -260.0f || gameObjectPos.z > 260.0f || gameObjectPos.z < -260.0f) {
+
+		return true;
+	}
+	return false;
+}
+
+int parseBufferForPosition(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+			i = 0;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	x /= 1000000;
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+			i = 0;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	y /= 1000000;
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+			i = 0;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	z /= 1000000;
+	if (zNegative) {
+		z *= -1;
+	}
+	temp->ObjectPhysicsData()->setPoition(x, y, z);
+	return index;
+}
+
+int parseBufferForRotation(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+			i = 0;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	x /= 1000000;
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+			i = 0;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	y /= 1000000;
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+			i = 0;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	z /= 1000000;
+	if (zNegative) {
+		z *= -1;
+	}
+	float w = 0;
+	int wDecimal = 7;
+	bool wNegative = (buffer[index] == '-');
+	if (wNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			wDecimal = i;
+			i = 0;
+		}
+		else {
+			w *= 10;
+			w += (buffer[index] - '0');
+		}
+		index++;
+	}
+	w /= 1000000;
+	if (wNegative) {
+		w *= -1;
+	}
+	temp->ObjectPhysicsData()->setRotationQuaternion(XMFLOAT4(x, y, z, w));
+	return index;
+}
+
+int parseBufferForOrientation(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+			i = 0;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	x /= 1000000;
+	if (xNegative) {
+		x *= -1;
+	}
+	temp->SetOrientationRadians(x);
+	return index;
+}
+
+int parseBufferForVelocity(GameObject* temp, char buffer[], int index) {
+	float x = 0;
+	bool xNegative = (buffer[index] == '-');
+	int xDecimal = 7;
+	if (xNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			xDecimal = i;
+			i = 0;
+		}
+		else {
+			x *= 10;
+			x += (buffer[index] - '0');
+		}
+		index++;
+	}
+	x /= 1000000;
+	if (xNegative) {
+		x *= -1;
+	}
+	float y = 0;
+	bool yNegative = (buffer[index] == '-');
+	int yDecimal = 7;
+	if (yNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			yDecimal = i;
+			i = 0;
+		}
+		else {
+			y *= 10;
+			y += (buffer[index] - '0');
+		}
+		index++;
+	}
+	y /= 1000000;
+	if (yNegative) {
+		y *= -1;
+	}
+	float z = 0;
+	int zDecimal = 7;
+	bool zNegative = (buffer[index] == '-');
+	if (zNegative) { index++; }
+	for (int i = 0; i < 7; i++) {
+		if (buffer[index] == '.') {
+			zDecimal = i;
+			i = 0;
+		}
+		else {
+			z *= 10;
+			z += (buffer[index] - '0');
+		}
+		index++;
+	}
+	z /= 1000000;
+	if (zNegative) {
+		z *= -1;
+	}
+	temp->ObjectPhysicsData()->setVelocity(x, y, z);
+	return index;
+}
+
+// At init 
+// Server send each client an integer for the index of teh game obejcts array taht is their player tank
+
 void CameraAndDynamicIndexingApp::UpdateGameLoop()
 {
+	if (playerGameObject != nullptr) {
+		if (checkOutBounds(playerGameObject->ObjectPhysicsData()->Position())) {
+			playerGameObject->ObjectPhysicsData()->setPoition(0.0, -1000.0, 0.0);
+			playerGameObject = nullptr;
+			std::wstring msg = L"Tank Died!";
+			MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+		}
+
+	}
+	else if (started == false) {
+		auto t = concurrency::create_task([this]() {
+			char buffer[1];
+			int error = recv(s, buffer, 1, 0);
+			if (error == INVALID_SOCKET) {
+				std::wstring msg = L"Server connection failed!";
+				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+				exit(1);
+			}
+			int ibuffer = buffer[0] - 1;
+			return ibuffer;
+			}).then([this](int result) {
+				if (0 <= result && result <= 3) {
+					started = true;
+					index = result;
+					playerGameObject = allGameObjects[result].get();
+				}
+				});
+	}
+	if (started == true) {
+		auto t = concurrency::create_task([this]() {
+			char buffer[128];
+			int length = 0;
+			length += sprintf_s(buffer, 128, "%d", index);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().x);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().y);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Position().z);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().x);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().y);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().z);
+			//length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->RotationQuaternion().w);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->OrientationRadians());
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().x);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().y);
+			length += sprintf_s(buffer + length, 128 - length, "%f", allGameObjects[index].get()->ObjectPhysicsData()->Velocity().z);
+			if (57 <= length && length <= 127) {
+				send(s, buffer, 128, 0);
+			}
+		}).then([this]() {
+			char buffer[128];
+			int error = recv(s, buffer, 128, 0);
+			if (error == INVALID_SOCKET) {
+				std::wstring msg = L"Failed to grab from server!";
+				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+				exit(0);
+			}
+			if ('0' <= buffer[0] && buffer[0] <= '3') {
+				int indice = 1;
+				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
+				indice = parseBufferForPosition(temp, buffer, indice);
+				//indice = parseBufferForRotation(temp, buffer, indice);
+				indice = parseBufferForOrientation(temp, buffer, indice);
+				indice = parseBufferForVelocity(temp, buffer, indice);
+			}
+		});
+	}
+
+	//playerGameObject->GetData();
+	// Send to server
+
+	// Get data from server  ...
+	// create array of data for game game objects
+	//for (GameObject* gameObject : gameObjects) {
+	//	gameObject->UpdateGameObject(...);
+	//}
 
 }
 
@@ -1148,6 +1513,52 @@ void CameraAndDynamicIndexingApp::BuildObjGeometry(char* filePath, std::string g
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+int CameraAndDynamicIndexingApp::Initialize_Client()
+{
+	WSADATA w;
+
+	int error = WSAStartup(0x0202, &w);
+
+	if (error)
+	{
+		PostQuitMessage(0);
+		running = false;
+		return 0;
+	}
+	if (w.wVersion != 0x0202)
+	{
+		PostQuitMessage(0);
+		running = false;
+		WSACleanup();
+		return 0;
+	}
+
+	s = socket(AF_INET, SOCK_STREAM, 0); // create socket
+	return(1);
+}
+
+int CameraAndDynamicIndexingApp::ConnectToServer()
+{
+	you.sin_family = AF_INET;
+	you.sin_port = htons(5005);    // RPSS port is 5555
+	you.sin_addr.s_addr = inet_addr("96.48.99.108");
+
+	if (connect(s, (LPSOCKADDR)&you, sizeof(you)) == SOCKET_ERROR)
+	{
+		return 1;
+		running = false;
+	}
+	else { printf("connected"); }
+
+	char arr[] = "This is a test";
+	char* buffer = arr;
+	char serverArr[126];
+	//char* bufferArr = serverArr;
+
+	send(s, buffer, 14, 0);
+	recv(s, serverArr, 126, 0);
+}
+
 void CameraAndDynamicIndexingApp::BuildLandGeometry()
 {
 	GeometryGenerator geoGen;
@@ -1536,12 +1947,38 @@ void CameraAndDynamicIndexingApp::BuildMaterials()
 	bricks0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
 	bricks0->Roughness = 0.1f;
 
+	auto tank = std::make_unique<Material>();
+	tank->Name = "tank";
+	tank->MatCBIndex = 5;
+	tank->DiffuseSrvHeapIndex = 2;
+	tank->DiffuseAlbedo = XMFLOAT4(Colors::DarkGreen);
+	tank->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	tank->Roughness = 0.1f;
+
+	auto wood = std::make_unique<Material>();
+	wood->Name = "wood";
+	wood->MatCBIndex = 6;
+	wood->DiffuseSrvHeapIndex = 2;
+	wood->DiffuseAlbedo = XMFLOAT4(Colors::SaddleBrown);
+	wood->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	wood->Roughness = 0.1f;
+
+	auto bullet = std::make_unique<Material>();
+	bullet->Name = "bullet";
+	bullet->MatCBIndex = 7;
+	bullet->DiffuseSrvHeapIndex = 2;
+	bullet->DiffuseAlbedo = XMFLOAT4(Colors::DarkGoldenrod);
+	bullet->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	bullet->Roughness = 0.1f;
 
 	mMaterials["grass"] = std::move(grass);
 	mMaterials["water"] = std::move(water);
 	mMaterials["wirefence"] = std::move(wirefence);
 	mMaterials["treeSprites"] = std::move(treeSprites);
 	mMaterials["bricks0"] = std::move(bricks0);
+	mMaterials["tank"] = std::move(tank);
+	mMaterials["wood"] = std::move(wood);
+	mMaterials["bullet"] = std::move(bullet);
 }
 
 XMFLOAT4 getRotateObjectQuaternionAroundY(float angleRadians) {
@@ -1553,13 +1990,17 @@ XMFLOAT4 getRotateObjectQuaternionAroundY(float angleRadians) {
 
 
 void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translation, float orientationRadians, UINT& objCBIndex) {
+	/*
+	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f, 2.25f, 7.5f);
+	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), (objectDimensions.y / 2), 0); // Assuming bottom corner fo object
+
 	auto objTankitem = std::make_unique<RenderItem>();
 	XMFLOAT4 rotationQuaternion = getRotateObjectQuaternionAroundY(orientationRadians);
 	XMVECTOR tankRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
-	XMStoreFloat4x4(&objTankitem->World, XMMatrixRotationQuaternion(tankRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
+	XMStoreFloat4x4(&objTankitem->World, XMMatrixTranslation(-(center.x), -(center.y), -(center.z)) * XMMatrixRotationQuaternion(tankRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y - (objectDimensions.y / 2), translation.z));
 	objTankitem->TexTransform = MathHelper::Identity4x4();
 	objTankitem->ObjCBIndex = objCBIndex++;
-	objTankitem->Mat = mMaterials["wirefence"].get();
+	objTankitem->Mat = mMaterials["tank"].get();
 	objTankitem->Geo = mGeometries["objGeoTank"].get();
 	objTankitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objTankitem->IndexCount = objTankitem->Geo->DrawArgs["objTank"].IndexCount;
@@ -1569,11 +2010,53 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 
 	// Create Physics Objects
 	float mass = 15.0f;
+	float coefficientFriction = 3.0;
 	float stepTime = 0.0f;
+	XMFLOAT3 scaledObjectDimensions = XMFLOAT3(objectDimensions.x * scaling.x, objectDimensions.y * scaling.y, objectDimensions.y * scaling.z);
+	XMFLOAT3 scaledCenter = XMFLOAT3((scaledObjectDimensions.x / 2), -1.0f + (scaledObjectDimensions.y / 2), 0); // Assuming bottom corner fo object
+	XMFLOAT3 scaledExtents = XMFLOAT3(scaledObjectDimensions.x / 2, scaledObjectDimensions.y / 2, scaledObjectDimensions.z / 2);
+
+	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
+
+	BoundingBox boundingBox = BoundingBox(scaledCenter, scaledExtents);
+
+	float boundingBoxScale = 1.0f;
+	XMVECTOR positionVector = XMLoadFloat3(&position);
+	boundingBox.Transform(boundingBox, boundingBoxScale, tankRotationQuaternion, positionVector);
+
+	auto physicsObject = std::make_unique<PhysicsObject>(position, XMFLOAT3(boundingBox.Center.x, boundingBox.Center.y, boundingBox.Center.z), rotationQuaternion, boundingBox, mass, coefficientFriction, stepTime);
+	objTankitem->physics = physicsObject.get();
+
+	// Define Game Objects
+	auto gameObject = std::make_unique<GameObject>(physicsObject.get(), orientationRadians, XMFLOAT3(10.0f, 10.0f, 10.0f));
+
+	mAllRitems.push_back(std::move(objTankitem));
+	allPhysicsObjects.push_back(std::move(physicsObject));
+	allGameObjects.push_back(std::move(gameObject));
+	*/
+
+	auto objTankitem = std::make_unique<RenderItem>();
+	XMFLOAT4 rotationQuaternion = getRotateObjectQuaternionAroundY(orientationRadians);
+	XMVECTOR tankRotationQuaternion = XMLoadFloat4(&rotationQuaternion);
+	XMStoreFloat4x4(&objTankitem->World, XMMatrixRotationQuaternion(tankRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
+	objTankitem->TexTransform = MathHelper::Identity4x4();
+	objTankitem->ObjCBIndex = objCBIndex++;
+	objTankitem->Mat = mMaterials["tank"].get();
+	objTankitem->Geo = mGeometries["objGeoTank"].get();
+	objTankitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	objTankitem->IndexCount = objTankitem->Geo->DrawArgs["objTank"].IndexCount;
+	objTankitem->StartIndexLocation = objTankitem->Geo->DrawArgs["objTank"].StartIndexLocation;
+	objTankitem->BaseVertexLocation = objTankitem->Geo->DrawArgs["objTank"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objTankitem.get());
+
+	// Create Physics Objects
+	float mass = 15.0f;
+	float coefficientFriction = 3.0;
+	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
 	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f * scaling.x, 2.5f * scaling.y, 7.5f * scaling.z);
-	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), (objectDimensions.y / 2), 0); // Assuming bottom corner fo object
+	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), -1.0f + (objectDimensions.y / 2), 0); // Assuming bottom corner fo object
 	XMFLOAT3 extents = XMFLOAT3(objectDimensions.x / 2, objectDimensions.y / 2, objectDimensions.z / 2);
 	BoundingBox boundingBox = BoundingBox(center, extents);
 
@@ -1581,7 +2064,8 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	XMVECTOR positionVector = XMLoadFloat3(&position);
 	boundingBox.Transform(boundingBox, boundingBoxScale, tankRotationQuaternion, positionVector);
 
-	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, boundingBox, mass, stepTime);
+	auto physicsObject = std::make_unique<PhysicsObject>(position, XMFLOAT3(boundingBox.Center.x, boundingBox.Center.y, boundingBox.Center.z), rotationQuaternion, boundingBox, mass, coefficientFriction, stepTime);
+	objTankitem->physics = physicsObject.get();
 
 	// Define Game Objects
 	auto gameObject = std::make_unique<GameObject>(physicsObject.get(), orientationRadians, XMFLOAT3(10.0f, 10.0f, 10.0f));
@@ -1590,15 +2074,6 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	allPhysicsObjects.push_back(std::move(physicsObject));
 	allGameObjects.push_back(std::move(gameObject));
 
-	/*
-	// Create Game Objects
-	int boxHealth = 100;
-	bool isPlayerObject = false;
-	if (i == 0) {
-		isPlayerObject = true;
-	}
-	auto gameObject = std::make_unique<GameObject>(physicsObject.get(), 100, isPlayerObject);
-	allGameObjects.push_back(std::move(gameObject));*/
 }
 
 
@@ -1609,7 +2084,7 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	XMStoreFloat4x4(&objHouseItem->World, XMMatrixRotationQuaternion(houseRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objHouseItem->TexTransform = MathHelper::Identity4x4();
 	objHouseItem->ObjCBIndex = objCBIndex++;
-	objHouseItem->Mat = mMaterials["wirefence"].get();
+	objHouseItem->Mat = mMaterials["wood"].get();
 	objHouseItem->Geo = mGeometries["objGeoHouse"].get();
 	objHouseItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objHouseItem->IndexCount = objHouseItem->Geo->DrawArgs["objHouse"].IndexCount;
@@ -1618,8 +2093,9 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objHouseItem.get());
 
 	// Create Physics Objects
-	float mass = 15.0f;
-	float stepTime = 0.0f;
+	float mass = 10000.0f;
+	float coefficientFriction = 100;
+	float stepTime = 0.001f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
 
 	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f * scaling.x, 3.0f * scaling.y, 5.25f * scaling.z);
@@ -1631,7 +2107,8 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	XMVECTOR positionVector = XMLoadFloat3(&position);
 	boundingBox.Transform(boundingBox, boundingBoxScale, houseRotationQuaternion, positionVector);
 
-	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, boundingBox, mass, stepTime);
+	auto physicsObject = std::make_unique<PhysicsObject>(position, XMFLOAT3(boundingBox.Center.x, boundingBox.Center.y, boundingBox.Center.z), rotationQuaternion, boundingBox, mass, coefficientFriction, stepTime);
+	objHouseItem->physics = physicsObject.get();
 
 	mAllRitems.push_back(std::move(objHouseItem));
 	allPhysicsObjects.push_back(std::move(physicsObject));
@@ -1654,6 +2131,7 @@ void CameraAndDynamicIndexingApp::BuildTree(XMFLOAT3 scaling, XMFLOAT3 translati
 
 	mAllRitems.push_back(std::move(treeSpritesRitem));
 }
+
 void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 translation, float orientationRadians, UINT& objCBIndex) {
 	auto objBulletItem = std::make_unique<RenderItem>();
 	XMFLOAT4 rotationQuaternion = getRotateObjectQuaternionAroundY(orientationRadians);
@@ -1661,7 +2139,7 @@ void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 transla
 	XMStoreFloat4x4(&objBulletItem->World, XMMatrixRotationQuaternion(bulletRotationQuaternion) * XMMatrixScaling(scaling.x, scaling.y, scaling.z) * XMMatrixTranslation(translation.x, translation.y, translation.z));
 	objBulletItem->TexTransform = MathHelper::Identity4x4();
 	objBulletItem->ObjCBIndex = objCBIndex++;
-	objBulletItem->Mat = mMaterials["wirefence"].get();
+	objBulletItem->Mat = mMaterials["bullet"].get();
 	objBulletItem->Geo = mGeometries["objGeoBullet"].get();
 	objBulletItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	objBulletItem->IndexCount = objBulletItem->Geo->DrawArgs["objBullet"].IndexCount;
@@ -1670,20 +2148,32 @@ void CameraAndDynamicIndexingApp::BuildBullet(XMFLOAT3 scaling, XMFLOAT3 transla
 
 	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBulletItem.get());
 
-	//Create Physics Objects
-   //float mass = 1.0f;
-   //float stepTime = 0.0f;
-   //XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
-   //XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
-   //XMFLOAT3 center = XMFLOAT3(translation.x + (scaling.x / 2), translation.y + (scaling.y / 2), translation.z + (scaling.z / 2)); // Assuming bottom corner fo object
-   //XMFLOAT3 extents = XMFLOAT3(scaling.x / 2, scaling.y / 2, scaling.z / 2); // ***** Need size (extents) of original object
-   //BoundingBox boundingBox = BoundingBox(center, extents);
-   //XMFLOAT3 velocity = XMFLOAT3(10.0f, 0.0f, 1.0f);
-   //auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, velocity, force, boundingBox, mass, stepTime);
+	// Create Physics Objects
+	float mass = 1.0f;
+	float coefficientFriction = 0;
+	float stepTime = 0.001f;
+	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
+
+	XMFLOAT3 objectDimensions = XMFLOAT3(2.0f * scaling.x, 2.0f * scaling.y, 8.0f * scaling.z);
+	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), (objectDimensions.y / 2), 0); // hosue built around center point
+	XMFLOAT3 extents = XMFLOAT3(objectDimensions.x / 2, objectDimensions.y / 2, objectDimensions.z / 2);
+	BoundingBox boundingBox = BoundingBox(center, extents);
+
+	float boundingBoxScale = 1.0f;
+	XMVECTOR positionVector = XMLoadFloat3(&position);
+	boundingBox.Transform(boundingBox, boundingBoxScale, bulletRotationQuaternion, positionVector);
+
+	auto physicsObject = std::make_unique<PhysicsObject>(position, XMFLOAT3(boundingBox.Center.x, boundingBox.Center.y, boundingBox.Center.z), rotationQuaternion, boundingBox, mass, coefficientFriction, stepTime);
+	objBulletItem->physics = physicsObject.get();
+
+	// Define Game Objects
+	auto gameObject = std::make_unique<GameObject>(physicsObject.get(), orientationRadians, XMFLOAT3(1000.0f, 1000.0f, 1000.0f));
 
 	mAllRitems.push_back(std::move(objBulletItem));
-	//allPhysicsObjects.push_back(std::move(physicsObject));
+	allPhysicsObjects.push_back(std::move(physicsObject));
+	allGameObjects.push_back(std::move(gameObject));
 }
+
 void CameraAndDynamicIndexingApp::generateBullet() {
 	UINT objCBIndex = mAllRitems.size();
 	XMFLOAT3 bulletScaling = XMFLOAT3(1.0f, 1.0f, 1.0f);
@@ -1699,79 +2189,35 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	float z1 = MathHelper::RandF(-130.0f, 130.0f);
 	float y2 = GetHillsHeight(x1, z1);
 
-	/*auto objBulletItem = std::make_unique<RenderItem>();
-	objBulletItem->ObjCBIndex = 2;
-	mAllRitems.push_back(std::move(objBulletItem));
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBulletItem.get());*/
-
 	XMFLOAT3 tankScaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
-	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, 0.0f, 1.0f);
-	float tankOrientationRadians = 0.5 * pi;
+	XMFLOAT3 tankTranslation = XMFLOAT3(0.0f, -1.0f, 35.0f);
+	float tankOrientationRadians = 0.0f;
 	BuildTank(tankScaling, tankTranslation, tankOrientationRadians, objCBIndex);
 
-	// This object is player object
-	playerGameObject = allGameObjects[objCBIndex - 1].get();
+	XMFLOAT3 tank2Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank2Translation = XMFLOAT3(35.0f, -1.0f, 0.0f);
+	float tank2OrientationRadians = 0.5 * pi;
+	BuildTank(tank2Scaling, tank2Translation, tank2OrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank3Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank3Translation = XMFLOAT3(0.0f, -1.0f, -35.0f);
+	float tank3OrientationRadians = pi;
+	BuildTank(tank3Scaling, tank3Translation, tank3OrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank4Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank4Translation = XMFLOAT3(-35.0f, -1.0f, 0.0f);
+	float tank4OrientationRadians = 1.5 * pi;
+	BuildTank(tank4Scaling, tank4Translation, tank4OrientationRadians, objCBIndex);
 
 	XMFLOAT3 houseScaling = XMFLOAT3(14.0f, 14.0f, 14.0f);
 	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 0.0f, 0.0f);
 	float houseOrientationRadians = 0.0f;
 	BuildHouse(houseScaling, houseTranslation, houseOrientationRadians, objCBIndex);
 
-	/*XMFLOAT3 bulletScaling = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	XMFLOAT3 bulletTranslation = XMFLOAT3(10.0f, 10.0f, 10.0f);
-	float bulletOrientationRadians = 0.0f;
-	BuildBullet(bulletScaling, bulletTranslation, bulletOrientationRadians, objCBIndex);*/
-
 	XMFLOAT3 treeScaling = XMFLOAT3(10.0f, 10.0f, 10.0f);
 	XMFLOAT3 treeTranslation = XMFLOAT3(-100.0f, 0.0f, 0.0f);
 	float treeOrientationRadians = 0.0f;
 	BuildTree(treeScaling, treeTranslation, treeOrientationRadians, objCBIndex);
-
-	XMFLOAT3 tank2Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
-	XMFLOAT3 tank2Translation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	float tank2OrientationRadians = 0.0f;
-	BuildTank(tank2Scaling, tank2Translation, tank2OrientationRadians, objCBIndex);
-
-
-	/*
-	auto objHouseItem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&objHouseItem->World, XMMatrixScaling(14.0f, 14.0f, 14.0f) * XMMatrixTranslation(150.0f, 1.0f, 0.0f));
-	objHouseItem->TexTransform = MathHelper::Identity4x4();
-	objHouseItem->ObjCBIndex = objCBIndex++;
-	objHouseItem->Mat = mMaterials["wirefence"].get();
-	objHouseItem->Geo = mGeometries["objGeoHouse"].get();
-	objHouseItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	objHouseItem->IndexCount = objHouseItem->Geo->DrawArgs["objHouse"].IndexCount;
-	objHouseItem->StartIndexLocation = objHouseItem->Geo->DrawArgs["objHouse"].StartIndexLocation;
-	objHouseItem->BaseVertexLocation = objHouseItem->Geo->DrawArgs["objHouse"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objHouseItem.get());
-	mAllRitems.push_back(std::move(objHouseItem));
-
-	auto objTankitem2 = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&objTankitem2->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(-35.0f, 1.0f, 1.0f));
-	//XMStoreFloat4x4(&objBoxRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	objTankitem2->TexTransform = MathHelper::Identity4x4();
-	objTankitem2->ObjCBIndex = objCBIndex++;
-	objTankitem2->Mat = mMaterials["wirefence"].get();
-	objTankitem2->Geo = mGeometries["objGeoTank"].get();
-	objTankitem2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	objTankitem2->IndexCount = objTankitem2->Geo->DrawArgs["objTank"].IndexCount;
-	objTankitem2->StartIndexLocation = objTankitem2->Geo->DrawArgs["objTank"].StartIndexLocation;
-	objTankitem2->BaseVertexLocation = objTankitem2->Geo->DrawArgs["objTank"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objTankitem2.get());
-	mAllRitems.push_back(std::move(objTankitem2));
-	auto treeSpritesRitem = std::make_unique<RenderItem>();
-	treeSpritesRitem->World = MathHelper::Identity4x4();
-	treeSpritesRitem->ObjCBIndex = objCBIndex++;
-	treeSpritesRitem->Mat = mMaterials["treeSprites"].get();
-	treeSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
-	treeSpritesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
-	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs["points"].IndexCount;
-	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
-	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
-	mAllRitems.push_back(std::move(treeSpritesRitem));
-	*/
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
@@ -1812,85 +2258,20 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	objMod->StartIndexLocation = objMod->Geo->DrawArgs["grid"].StartIndexLocation;
 	objMod->BaseVertexLocation = objMod->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	/*auto objBulletItem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&objBulletItem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f)* XMMatrixTranslation(20.0f, 20.0f, 0.0f));
-	objBulletItem->TexTransform = MathHelper::Identity4x4();
-	objBulletItem->ObjCBIndex = objCBIndex++;
-	objBulletItem->Mat = mMaterials["wirefence"].get();
-	objBulletItem->Geo = mGeometries["objGeoBullet"].get();
-	objBulletItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	objBulletItem->IndexCount = objBulletItem->Geo->DrawArgs["objBullet"].IndexCount;
-	objBulletItem->StartIndexLocation = objBulletItem->Geo->DrawArgs["objBullet"].StartIndexLocation;
-	objBulletItem->BaseVertexLocation = objBulletItem->Geo->DrawArgs["objBullet"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(objBulletItem.get());
-	mAllRitems.push_back(std::move(objBulletItem));*/
-
 	mRitemLayer[(int)RenderLayer::Transparent].push_back(objMod.get());
-
 
 	mAllRitems.push_back(std::move(objMod));
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(gridRitem));
 	/*mAllRitems.push_back(std::move(boxRitem));*/
 
-	/*
-	XMMATRIX brickTexTransform = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-	UINT objCBIndex = 4;
-	for(int i = 0; i < 0; ++i)
-	{
-		auto leftCylRitem = std::make_unique<RenderItem>();
-		auto rightCylRitem = std::make_unique<RenderItem>();
-		auto leftSphereRitem = std::make_unique<RenderItem>();
-		auto rightSphereRitem = std::make_unique<RenderItem>();
-		XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i*5.0f);
-		XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i*5.0f);
-		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i*5.0f);
-		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i*5.0f);
-		XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
-		XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
-		leftCylRitem->ObjCBIndex = objCBIndex++;
-		leftCylRitem->Mat = mMaterials["bricks0"].get();
-		leftCylRitem->Geo = mGeometries["shapeGeo"].get();
-		leftCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-		XMStoreFloat4x4(&rightCylRitem->World, leftCylWorld);
-		XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
-		rightCylRitem->ObjCBIndex = objCBIndex++;
-		rightCylRitem->Mat = mMaterials["bricks0"].get();
-		rightCylRitem->Geo = mGeometries["shapeGeo"].get();
-		rightCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-		XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
-		leftSphereRitem->TexTransform = MathHelper::Identity4x4();
-		leftSphereRitem->ObjCBIndex = objCBIndex++;
-		leftSphereRitem->Mat = mMaterials["stone0"].get();
-		leftSphereRitem->Geo = mGeometries["shapeGeo"].get();
-		leftSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-		XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
-		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
-		rightSphereRitem->ObjCBIndex = objCBIndex++;
-		rightSphereRitem->Mat = mMaterials["stone0"].get();
-		rightSphereRitem->Geo = mGeometries["shapeGeo"].get();
-		rightSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-		mAllRitems.push_back(std::move(leftCylRitem));
-		mAllRitems.push_back(std::move(rightCylRitem));
-		mAllRitems.push_back(std::move(leftSphereRitem));
-		mAllRitems.push_back(std::move(rightSphereRitem));
-	}
-	// All the render items are opaque.
-	for(auto& e : mAllRitems)
-		mOpaqueRitems.push_back(e.get());
-	*/
+	XMFLOAT3 bulletScaling = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	XMFLOAT3 bulletTranslation = XMFLOAT3(5.0f, 20.0f, -200.0f);
+	//XMFLOAT3 bulletTranslation = XMFLOAT3(0.0f, 5.0f, 0.0f);
+	float bulletOrientationRadians = pi;
+	BuildBullet(bulletScaling, bulletTranslation, bulletOrientationRadians, objCBIndex);
+	mAllRitems[objCBIndex - 1].get()->physics->setVelocity(0, 0, 100);
+
 	// All physics objects shoudl be poart of pysics world
 	for (auto& physicsObject : allPhysicsObjects)
 		physicsWorld.AddObject(physicsObject.get());

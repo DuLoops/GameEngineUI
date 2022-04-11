@@ -9,7 +9,7 @@ using namespace DirectX;
 class PhysicsObject
 {
 public:
-    PhysicsObject(XMFLOAT3 position, XMFLOAT3 centerPoint, XMFLOAT4 rotationQuaternion, BoundingBox objBoundingBox, float mass, float stepTime);
+    PhysicsObject(XMFLOAT3 position, XMFLOAT3 centerPoint, XMFLOAT4 rotationQuaternion, BoundingBox objBoundingBox, float mass, float coefficientFriction, float stepTime);
     PhysicsObject(const PhysicsObject& rhs) = delete;
     PhysicsObject& operator=(const PhysicsObject& rhPhysicsObject);
     ~PhysicsObject();
@@ -23,14 +23,18 @@ public:
     const XMFLOAT3& Force()const { return force; }
     const BoundingBox& ObjBoundingBox()const { return boundingBox; }
     const float Mass()const { return mass; }
+    const float CoefficientFriction()const { return coefficientFriction; }
 
-    void setPoition(float x, float y, float z) { position = { x, y, z }; }
-    void setRotationQuaternion(XMFLOAT4 newRotationQuaternion) { rotationQuaternion = { newRotationQuaternion.x, newRotationQuaternion.y, newRotationQuaternion.z, newRotationQuaternion.w }; }
+    void setPoition(float x, float y, float z);
+    void setRotationQuaternion(XMFLOAT4 newRotationQuaternion);
     void setVelocity(float x, float y, float z) { velocity = { x, y, z }; }
     void setForce(float x, float y, float z) { force = { x, y, z }; }
     void setMass(float newMass) { mass = newMass; }
+    void setCoefficientFriction(float newCoefficientFriction) { coefficientFriction = newCoefficientFriction; }
 
     void applyForce(float x, float y, float z) { force = { force.x + x, force.y + y, force.z + z }; }
+
+    XMFLOAT3 getPosition();
 
     void Update(float dt);
 
@@ -38,6 +42,8 @@ private:
     XMFLOAT3 velocity;
     XMFLOAT3 force;
     float mass;
+    
+    float coefficientFriction;
 
     XMFLOAT3 position;
     XMFLOAT3 centerPoint;

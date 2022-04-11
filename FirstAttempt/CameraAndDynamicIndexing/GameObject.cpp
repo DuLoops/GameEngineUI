@@ -34,3 +34,13 @@ void GameObject::ChangeOrientationRadians(float deltaRadians) {
 	objectPhysicsData->setRotationQuaternion(rotationQuaternion);
 }
 
+void GameObject::SetOrientationRadians(float radians) {
+	objectOrientationRadians = radians;
+
+	XMVECTOR rotationQuaternionVector = XMQuaternionRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), objectOrientationRadians);
+	XMFLOAT4 rotationQuaternion;
+	XMStoreFloat4(&rotationQuaternion, rotationQuaternionVector);
+
+	objectPhysicsData->setRotationQuaternion(rotationQuaternion);
+}
+
