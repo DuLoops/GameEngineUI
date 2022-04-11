@@ -173,6 +173,7 @@
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>
+    <Media Include="Sounds\drive.wav" />
     <Media Include="Sounds\explo1.wav" />
     <Media Include="Sounds\NightAmbienceSimple_02.wav" />
   </ItemGroup>
