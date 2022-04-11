@@ -678,6 +678,15 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 	//playerGameObject = nullptr;
 }
 
+bool checkOutBounds(XMFLOAT3 gameObjectPos) {
+
+	if (gameObjectPos.x > 260.0f || gameObjectPos.x < -260.0f || gameObjectPos.z > 260.0f || gameObjectPos.z < -260.0f) {
+
+		return true;
+	}
+	return false;
+}
+
 void CameraAndDynamicIndexingApp::AnimateMaterials(const GameTimer& gt)
 {
 	// Scroll the water material texture coordinates.
