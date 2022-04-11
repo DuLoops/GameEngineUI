@@ -2,13 +2,13 @@
 
 using namespace DirectX;
 
-PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingCenterPoint, XMFLOAT4 startingRotationQuaternion, XMFLOAT3 startingVelocity, XMFLOAT3 startingForce, BoundingBox objBoundingBox, float startingMass, float stepTime)
+PhysicsObject::PhysicsObject(XMFLOAT3 startingPosition, XMFLOAT3 startingCenterPoint, XMFLOAT4 startingRotationQuaternion, BoundingBox objBoundingBox, float startingMass, float stepTime)
 {
 	position = startingPosition;
 	centerPoint = startingCenterPoint;
 	rotationQuaternion = startingRotationQuaternion;
-	velocity = startingVelocity;
-	force = startingForce;
+	velocity = XMFLOAT3{0, 0, 0};
+	force = XMFLOAT3{ 0, 0, 0 };
 	boundingBox = objBoundingBox;
 	mass = startingMass;
 	timeStep = stepTime;
@@ -30,10 +30,9 @@ void PhysicsObject::Update(float dt)
 	{
 		float objectScale = 1.0f;
 
-		XMFLOAT3 rotationAxis = XMFLOAT3(0.0f, 0.0f, 1.0f);
-		XMVECTOR rotationAxisVector = XMLoadFloat3(&rotationAxis);
 		float rotationAngle = 0.0f;
-		XMVECTOR rotationVector = XMQuaternionRotationAxis(rotationAxisVector, rotationAngle);
+		XMVECTOR rotationVector = XMQuaternionRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), rotationAngle);
+		//XMVECTOR newRotationVector = XMLoadFloat4(&rotationQuaternion);
 
 		XMVECTOR pos = XMLoadFloat3(&position);
 		XMVECTOR center = XMLoadFloat3(&centerPoint);
@@ -43,8 +42,24 @@ void PhysicsObject::Update(float dt)
 		XMVECTOR newCenter = center + translationVector;
 
 		XMStoreFloat3(&position, newPos);
-		XMStoreFloat3(&centerPoint, newCenter);
+		//XMStoreFloat3(&centerPoint, newCenter);
 		boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
+		//boundingBox.Transform(boundingBox, objectScale, rotationVector, translationVector);
+
+		/*
+		XMVECTOR rotationVector = XMLoadFloat4(&rotationQuaternion);
+		XMVECTOR pos = XMLoadFloat3(&position);
+		XMVECTOR center = XMLoadFloat3(&centerPoint);
+		XMFLOAT3 translation = XMFLOAT3(velocity.x * t, velocity.y * t, velocity.z * t);
+		XMVECTOR translationVector = XMLoadFloat3(&translation);
+		XMVECTOR newPos = pos + translationVector;
+		XMVECTOR newCenter = center + translationVector;
+
+		XMStoreFloat3(&position, newPos);
+		XMStoreFloat3(&centerPoint, newCenter);
+		boundingBox.Transform(boundingBox, objectScale, XMVectorZero(), translationVector);
+		boundingBox.Transform(boundingBox, objectScale, rotationVector, XMVectorZero());
+		*/
 
 		t = 0.0f;
 	}

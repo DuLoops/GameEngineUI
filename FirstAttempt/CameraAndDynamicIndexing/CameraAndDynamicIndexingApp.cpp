@@ -187,7 +187,7 @@ private:
 	std::vector<std::unique_ptr<PhysicsObject>> allPhysicsObjects;
 	std::vector<std::unique_ptr<GameObject>> allGameObjects;
 	std::vector<GameObject*> gameObjects;
-	GameObject* playerGameObject;
+	GameObject* playerGameObject = nullptr;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -487,11 +487,14 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	const float dt = gt.DeltaTime();
 
 	if (GetAsyncKeyState('W') & 0x8000) {
-		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 10.0f, 1.0f);
-		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-		XMFLOAT3 forwardVelocity;
-		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		if (playerGameObject != nullptr) {
+			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, 30.0f, 1.0f);
+			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+			XMFLOAT3 forwardVelocity;
+			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+
+		}
 		
 		mCamera.Walk(100.0f * dt);
 	}
@@ -501,12 +504,14 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	}
 
 	if (GetAsyncKeyState('S') & 0x8000) {
-		XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-		XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
-		XMFLOAT3 forwardVelocity;
-		XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
-		playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
-
+		if (playerGameObject != nullptr) {
+			XMVECTOR originalForwardVelocityVector = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+			XMVECTOR actualForwardVelocityVector = XMVector3Rotate(originalForwardVelocityVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion()));
+			XMFLOAT3 forwardVelocity;
+			XMStoreFloat3(&forwardVelocity, actualForwardVelocityVector);
+			playerGameObject->ObjectPhysicsData()->setVelocity(forwardVelocity.x, forwardVelocity.y, forwardVelocity.z);
+		}
+		
 		mCamera.Walk(-100.0f * dt); 
 	}
 
@@ -515,7 +520,9 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000) {
-		playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi );
+		if (playerGameObject != nullptr) {
+			playerGameObject->ChangeOrientationRadians(-0.0001 * 180 / pi);
+		}
 
 		mCamera.Strafe(-100.0f * dt);
 	}
@@ -525,7 +532,10 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	}
 
 	if (GetAsyncKeyState('D') & 0x8000) {
-		playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
+		if (playerGameObject != nullptr) {
+			playerGameObject->ChangeOrientationRadians(0.0001 * 180 / pi);
+		}
+		
 		mCamera.Strafe(100.0f * dt);
 	}
 
@@ -538,6 +548,13 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	if (GetAsyncKeyState('K') & 0x8000) {
 		mCamera.Roll(1.0f * dt);
+	}
+
+	if (GetAsyncKeyState('8') & 0x8000) {
+		playerGameObject = allGameObjects[0].get();
+	}
+	if (GetAsyncKeyState('9') & 0x8000) {
+		playerGameObject = nullptr;
 	}
 
 	if (GetAsyncKeyState('2') & 0x8000) {
@@ -573,25 +590,28 @@ void CameraAndDynamicIndexingApp::OnKeyboardInput(const GameTimer& gt)
 	else
 		mIsWireframe = false;
 
-	
+	if (playerGameObject == nullptr)
+		mCamera.UpdateViewMatrix();
 }
 
 void CameraAndDynamicIndexingApp::UpdateCamera(const GameTimer& gt)
 {
-	// Build the view matrix.
-	XMVECTOR pos = XMVectorSet(playerGameObject->ObjectPhysicsData()->Position().x, playerGameObject->ObjectPhysicsData()->Position().y, playerGameObject->ObjectPhysicsData()->Position().z, 1.0f);
-	
-	XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-	XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
-	XMVECTOR target = actualForwardVector * 1000;
+	if (playerGameObject != nullptr) {
+		// Build the view matrix.
+		XMVECTOR pos = XMVectorSet(playerGameObject->ObjectPhysicsData()->Position().x, playerGameObject->ObjectPhysicsData()->Position().y, playerGameObject->ObjectPhysicsData()->Position().z, 1.0f);
 
-	pos = pos - actualForwardVector * 50;
-	pos = XMVectorSetY(pos, 20.0f);
+		XMVECTOR originalForwardVector = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+		XMVECTOR actualForwardVector = XMVector3Normalize(XMVector3Rotate(originalForwardVector, XMLoadFloat4(&playerGameObject->ObjectPhysicsData()->RotationQuaternion())));
+		XMVECTOR target = actualForwardVector * 1000;
 
-	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		pos = pos - actualForwardVector * 50;
+		pos = XMVectorSetY(pos, 20.0f);
 
-	mCamera.LookAt(pos, target, up);
-	mCamera.UpdateViewMatrix();
+		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+		mCamera.LookAt(pos, target, up);
+		mCamera.UpdateViewMatrix();
+	}
 }
 
 void CameraAndDynamicIndexingApp::PhysicsUpdate(const GameTimer& gt)
@@ -1523,18 +1543,20 @@ void CameraAndDynamicIndexingApp::BuildTank(XMFLOAT3 scaling, XMFLOAT3 translati
 	float mass = 15.0f;
 	float stepTime = 0.0f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
-	XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 center = XMFLOAT3(translation.x + (scaling.x / 2), translation.y + (scaling.y / 2), translation.z + (scaling.z / 2)); // Assuming bottom corner fo object
-	XMFLOAT3 extents = XMFLOAT3(scaling.x / 2, scaling.y / 2, scaling.z / 2);
+
+	XMFLOAT3 objectDimensions = XMFLOAT3( 4.0f * scaling.x, 2.5f * scaling.y, 7.5f * scaling.z);
+	XMFLOAT3 center = XMFLOAT3((objectDimensions.x / 2), (objectDimensions.y / 2), 0); // Assuming bottom corner fo object
+	XMFLOAT3 extents = XMFLOAT3(objectDimensions.x / 2, objectDimensions.y / 2, objectDimensions.z / 2);
 	BoundingBox boundingBox = BoundingBox(center, extents);
-	XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, velocity, force, boundingBox, mass, stepTime);
+	
+	float boundingBoxScale = 1.0f;
+	XMVECTOR positionVector = XMLoadFloat3(&position);
+	boundingBox.Transform(boundingBox, boundingBoxScale, tankRotationQuaternion, positionVector);
+	
+	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, boundingBox, mass, stepTime);
 	
 	// Define Game Objects
 	auto gameObject = std::make_unique<GameObject>(physicsObject.get(), orientationRadians, XMFLOAT3(10.0f, 10.0f, 10.0f));
-	
-	// This object is player object
-	playerGameObject = gameObject.get();
 
 	mAllRitems.push_back(std::move(objTankitem));
 	allPhysicsObjects.push_back(std::move(physicsObject));
@@ -1571,12 +1593,17 @@ void CameraAndDynamicIndexingApp::BuildHouse(XMFLOAT3 scaling, XMFLOAT3 translat
 	float mass = 15.0f;
 	float stepTime = 0.0f;
 	XMFLOAT3 position = XMFLOAT3(translation.x, translation.y, translation.z);
-	XMFLOAT3 force = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 center = XMFLOAT3(translation.x + (scaling.x / 2), translation.y + (scaling.y / 2), translation.z + (scaling.z / 2)); // Assuming bottom corner fo object
-	XMFLOAT3 extents = XMFLOAT3(scaling.x / 2, scaling.y / 2, scaling.z / 2); // ***** Need size (extents) of original object
+
+	XMFLOAT3 objectDimensions = XMFLOAT3(4.0f * scaling.x, 3.0f * scaling.y, 5.25f * scaling.z);
+	XMFLOAT3 center = XMFLOAT3(0, (objectDimensions.y / 2), -3.5f); // hosue built around center point
+	XMFLOAT3 extents = XMFLOAT3(objectDimensions.x / 2, objectDimensions.y / 2, objectDimensions.z / 2);
 	BoundingBox boundingBox = BoundingBox(center, extents);
-	XMFLOAT3 velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, velocity, force, boundingBox, mass, stepTime);
+
+	float boundingBoxScale = 1.0f;
+	XMVECTOR positionVector = XMLoadFloat3(&position);
+	boundingBox.Transform(boundingBox, boundingBoxScale, houseRotationQuaternion, positionVector);
+
+	auto physicsObject = std::make_unique<PhysicsObject>(position, center, rotationQuaternion, boundingBox, mass, stepTime);
 	
 	mAllRitems.push_back(std::move(objHouseItem));
 	allPhysicsObjects.push_back(std::move(physicsObject));
@@ -1609,20 +1636,27 @@ void CameraAndDynamicIndexingApp::BuildRenderItems()
 	float y2 = GetHillsHeight(x1, z1);
 
 	XMFLOAT3 tankScaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
-	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, 1.0f, 1.0f);
+	XMFLOAT3 tankTranslation = XMFLOAT3(35.0f, 0.0f, 1.0f);
 	float tankOrientationRadians = 0.5 * pi;
 	BuildTank(tankScaling, tankTranslation, tankOrientationRadians, objCBIndex);
 	
+	// This object is player object
+	playerGameObject = allGameObjects[objCBIndex - 1].get();
+
 	XMFLOAT3 houseScaling = XMFLOAT3(14.0f, 14.0f, 14.0f);
-	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 1.0f, 0.0f);
-	XMFLOAT4 houseRotationQuaternion = getRotateObjectQuaternionAroundY(0);
+	XMFLOAT3 houseTranslation = XMFLOAT3(150.0f, 0.0f, 0.0f);
 	float houseOrientationRadians = 0.0f;
 	BuildHouse(houseScaling, houseTranslation, houseOrientationRadians, objCBIndex);
 
 	XMFLOAT3 treeScaling = XMFLOAT3(10.0f, 10.0f, 10.0f);
-	XMFLOAT3 treeTranslation = XMFLOAT3(-100.0f, 1.0f, 0.0f);
+	XMFLOAT3 treeTranslation = XMFLOAT3(-100.0f, 0.0f, 0.0f);
 	float treeOrientationRadians = 0.0f;
 	BuildTree(treeScaling, treeTranslation, treeOrientationRadians, objCBIndex);
+
+	XMFLOAT3 tank2Scaling = XMFLOAT3(4.0f, 4.0f, 4.0f);
+	XMFLOAT3 tank2Translation = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	float tank2OrientationRadians = 0.0f;
+	BuildTank(tank2Scaling, tank2Translation, tank2OrientationRadians, objCBIndex);
 
 
 	/*
