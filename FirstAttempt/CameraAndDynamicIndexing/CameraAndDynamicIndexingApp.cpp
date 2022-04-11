@@ -1015,23 +1015,23 @@ void CameraAndDynamicIndexingApp::UpdateGameLoop()
 			if (57 <= length && length <= 127) {
 				send(s, buffer, 128, 0);
 			}
-			}).then([this]() {
-				char buffer[128];
-				int error = recv(s, buffer, 128, 0);
-				if (error == INVALID_SOCKET) {
-					std::wstring msg = L"Failed to grab from server!";
-					//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
-					exit(0);
-				}
-				if ('0' <= buffer[0] && buffer[0] <= '3') {
-					int indice = 1;
-					GameObject* temp = allGameObjects[buffer[0] - '0'].get();
-					indice = parseBufferForPosition(temp, buffer, indice);
-					indice = parseBufferForRotation(temp, buffer, indice);
-					//indice = parseBufferForOrientation(temp, buffer, indice);
-					indice = parseBufferForVelocity(temp, buffer, indice);
-				}
-				});
+		}).then([this]() {
+			char buffer[128];
+			int error = recv(s, buffer, 128, 0);
+			if (error == INVALID_SOCKET) {
+				std::wstring msg = L"Failed to grab from server!";
+				//MessageBox(NULL, msg.c_str(), msg.c_str(), MB_ICONERROR | MB_OK);
+				exit(0);
+			}
+			if ('0' <= buffer[0] && buffer[0] <= '3') {
+				int indice = 1;
+				GameObject* temp = allGameObjects[buffer[0] - '0'].get();
+				indice = parseBufferForPosition(temp, buffer, indice);
+				indice = parseBufferForRotation(temp, buffer, indice);
+				//indice = parseBufferForOrientation(temp, buffer, indice);
+				indice = parseBufferForVelocity(temp, buffer, indice);
+			}
+		});
 	}
 
 	//playerGameObject->GetData();
