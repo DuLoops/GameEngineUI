@@ -1,5 +1,5 @@
 # Tank Game
-This is a 1vs1 tank game developed in a group of eight using C++, C#, OpenCL, and WPF. The game features a multiplayer mode where two players can compete against each other in a battle arena. Players control tanks and use them to shoot at each other while dodging obstacles and collecting power-ups.
+This is a 1vs1 tank game developed in a group of eight using C++, C#, OpenCL, and WPF. The game features a multiplayer mode where two players can compete against each other in a battle arena. Players control tanks and use them to shoot at each other.
 
 # Installation
 To install the game, you will need to clone the repository to your local machine and build it using Visual Studio or another IDE that supports C++ and C#. You will also need to have OpenCL installed on your machine to run the game.
